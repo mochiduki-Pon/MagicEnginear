@@ -136,7 +136,11 @@ void PlayerBullet::Explode()
 
 void PlayerBullet::Spawn(const Vector3& pos, const Vector3& dir, BulletGimmick::BulletNo no)
 {
-	//setPosition(pos);
+	// ”­ŽËˆÊ’u
+	SRT srt = getSRT();
+	srt.pos = pos;
+	setSRT(srt);
+
 	SetDir(dir);
 
 	m_no = no;
