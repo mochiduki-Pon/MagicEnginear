@@ -25,12 +25,12 @@ public:
 
         const char* texture = "assets/texture/Circle256.png";
 
-        // Trap予兆（必要なら draw で使う）
+        // Trap
         bool  pulse = false;
         float pulseSpeed = 8.0f;
         float pulseAmp = 0.20f;
 
-        // スケール（必要なら draw で使う）
+        // スケール
         float scale = 1.0f;
     };
 
@@ -75,7 +75,7 @@ private:
     { Color(1,1,1,0.6f), Color(1,1,1,0.6f), Color(0,1,1,0.6f), Color(0,0,1,0.6f),
     "assets/texture/Circle256.png", false, 8.0f, 0.2f, 1.0f },
 
-    // WaterTrap（例：少し明るめ＋pulse）
+    // WaterTrap
     { Color(1,1,1,0.6f), Color(1,1,1,0.6f), Color(0.3f,1,1,0.6f), Color(0,0.4f,1,0.6f),
     "assets/texture/Circle256.png", true, 8.0f, 0.20f, 1.2f },
 

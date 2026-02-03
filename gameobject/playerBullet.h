@@ -55,16 +55,13 @@ public:
 	BulletGimmick::BulletNo m_selectedNo;
 	BulletGimmick::BulletNo GetNo() const { return m_no; }
 
-	// 追加：発射（設置）初期化
-	//void Spawn(const Vector3& pos, const Vector3& dir, BulletType type);	// 初期化
+	// 発射設置初期化
 	void Spawn(const Vector3& pos, const Vector3& dir, BulletGimmick::BulletNo no);
-	//BulletNo m_no;         // どの箱か（6種類）
-	bool     m_triggered;  // Trapが1回発動済みか（Killしない前提）
 	void SetActorNo(uint8_t no) { m_actorNo = no; }
 	uint8_t GetActorNo() const { return m_actorNo; }
 	bool IsTrap() const{ return m_spec.isTrap; }
 
-	// 弾当たり判定用（即席ポテト）
+	// 弾当たり判定用
 	float GetCollisionRadius() const { return m_collisionRadius; }
 	void SetCollisionRadius(float r) { m_collisionRadius = r; }
 	Vector3 GetColliderCenter() const;
@@ -88,6 +85,7 @@ private:
 	uint64_t m_maxLifeMs = 0;      // 寿命(ms)
 
 	bool isAlive = false;
+	bool     m_triggered;  // Trapが1回発動済みか
 
 	float m_width = 10.0f;
 	float m_height = 10.0f;

@@ -95,6 +95,7 @@ void PlayerBullet::ResetForSpawn()
 	m_maxLifeMs = static_cast<uint64_t>(m_maxLife * 1000.0f);// 寿命(ms)
 }
 
+// ビジュアル用バーテクス
 void PlayerBullet::VisualGimmick()
 {
 	const auto& vs = BulletGimmick::VSpec(m_no);
@@ -174,7 +175,7 @@ void PlayerBullet::update(uint64_t dt)
 
 	if (m_spec.isTrap)
 	{
-		// Trap 挙動（何もしない）
+		// Trap 挙動
 		return;
 	}
 
@@ -210,6 +211,7 @@ void PlayerBullet::draw(uint64_t dt)
 	SRT drawSrt = getSRT();
 	float s = vs.scale;
 
+	// 点滅
 	if (vs.pulse)
 	{
 		const float t = sinf(ageSec * vs.pulseSpeed) * 0.5f + 0.5f;

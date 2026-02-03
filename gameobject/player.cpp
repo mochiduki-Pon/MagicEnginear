@@ -47,7 +47,7 @@ void player::AddMp(int amount)
 	if (amount <= 0) return;
 
 	m_mp += amount;
-	m_mpDelta += amount;          // ★ここだけ追加
+	m_mpDelta += amount;
 	if (m_mp > m_maxMp)
 		m_mp = m_maxMp;
 }
@@ -119,7 +119,7 @@ bool player::wallshitcheck(std::vector<wall::WallCollision>& hitwalls)
 
     // 壁を取得
     std::vector<wall*> walls{};
-    walls = ((TutorialScene*)m_ownerscene)->getwalls(); // ←今使うScene
+    walls = ((TutorialScene*)m_ownerscene)->getwalls(); // 今使うScene
 
     for (auto* w : walls)
     {
@@ -127,7 +127,7 @@ bool player::wallshitcheck(std::vector<wall::WallCollision>& hitwalls)
 
         w->clearhitflag();
 
-        // 壁OBB（厚みを持たせる）
+        // 壁OBB
         const SRT wsrt = w->getSRT();
         const float ww = w->getwidth();
         const float wh = w->getheight();
@@ -454,7 +454,6 @@ void player::CheckShotDir() {
 	dir.y = 0.0f;
 	dir.z = -cosf(m_srt.rot.y);
 
-	// 念のため正規化（ゼロにはならないはず）
 	dir.Normalize();
 
 	SetPlayerDir(dir);   // m_vDir に反映
@@ -463,7 +462,7 @@ void player::CheckShotDir() {
 static BulletGimmick::BulletNo ErementMode(int elementIndex, player::BulletMode mode)
 {
 	// elementIndex: 0=Water, 1=Fire, 2=Wind
-	const int base = elementIndex * 2;			// 0,2,4偶数番がShot
+	const int base = elementIndex * 2;			// 0,2,4偶数番Shot
 	const int m = (mode == player::BulletMode::Trap) ? 1 : 0;
 	return (BulletGimmick::BulletNo)(base + m);
 }
@@ -499,8 +498,7 @@ void player::update(uint64_t dt)
 	m_spawnPos = m_srt.pos;
 
 	// ジャンプ
-	//ここにあるのはちょっとどうか
-	m_Acceleration = Vector3(0, 0, 0);				// 加速度０クリア
+	m_Acceleration = Vector3(0, 0, 0);// 加速度０クリア
 
 	CheckShotDir();
 	ShotHandle();
@@ -535,15 +533,6 @@ void player::update(uint64_t dt)
 
 		if (m_onground) { m_actstate = PlayerActState::Idle; }
 		break;
-
-	//case PlayerActState::Attack:
-	//	ShotHandle();
-	//	//アニメ、モーション、入れれますよぉ
-	//	if (!m_shotFlg) {
-	//		m_actstate = PlayerActState::Idle;
-	//	}
-
-	//	break;
 	}
 
 	if (m_prevActState != m_actstate) {
@@ -566,7 +555,7 @@ void player::update(uint64_t dt)
 
 	//背景当たり判定部分
 	bool obstaclehit = false;
-	Vector3 nextpos = m_srt.pos + m_move;					// 次の位置を計算
+	Vector3 nextpos = m_srt.pos + m_move; // 次の位置
 	float radius = 10.0f;
 
 	std::vector<wall::WallCollision> hitwalls{};
