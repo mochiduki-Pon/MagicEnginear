@@ -413,6 +413,7 @@ void TutorialScene::CollisionStep()
 	}
 }
 
+// ステージスクリプトの切り替え部分
 void TutorialScene::SetupStage(Stage stage)
 {
 	m_stage = stage;
@@ -591,7 +592,6 @@ void TutorialScene::update(uint64_t deltatime)
 	// ショット処理
 	if (m_player->ConsumeShotFlag())
 	{
-		// 自分マジで頼むからめんどくさがらずに定義してくれええええ
 		// Trapコスト
 		static constexpr int TRAP_COST = 10;
 
