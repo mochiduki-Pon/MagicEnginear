@@ -538,9 +538,7 @@ void enemy::update(uint64_t dt)
 		// 重力
 		m_Velocity.y += m_gravity.y * 0.5f;
 
-		// =========================
-		// 横移動（XZ）だけ壁チェック
-		// =========================
+		// XZ
 		Vector3 moveXZ(m_Velocity.x, 0.0f, m_Velocity.z);
 
 		std::vector<wall::WallCollision> hitwalls;
@@ -568,16 +566,14 @@ void enemy::update(uint64_t dt)
 			m_srt.pos += moveXZ;
 		}
 
-		// 速度へ反映（XZのみ）
+		// 速度へ反映（XZ）
 		m_Velocity.x = moveXZ.x;
 		m_Velocity.z = moveXZ.z;
 
-		// =========================
-		// 縦移動（Y）は完全に別で落とす
-		// =========================
+		// Y
 		m_srt.pos.y += m_Velocity.y;
 
-		// 着地判定（今まで通り）
+		// 着地判定
 		if (m_srt.pos.y <= m_groundheight)
 		{
 			m_srt.pos.y = m_groundheight;
