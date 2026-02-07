@@ -88,6 +88,7 @@ private:
 	Status m_sts = Status::Alive;;
 	Reaction m_reaction = Reaction::None;
 	DeathCause m_deathCause = DeathCause::Normal;
+	BulletGimmick::BulletNo m_lastHitBulletNo = BulletGimmick::BulletNo::WaterShot;
 
 	// ▼定数パラメータ▼
 	const float VALUE_MOVE_MODEL = 10.0f;					// 移動速度
@@ -98,6 +99,7 @@ private:
 	static constexpr uint64_t DAMAGE_FLASH_MS = 120;		// ダメージ点滅時間(ms)
 	static constexpr uint64_t DEAD_VISIBLE_MS = 600;		// 死体残留時間(ms)
 	static constexpr float ENEMY_FALL_Y = -190.0f;
+	static constexpr uint64_t DAMAGE_REMAIN_MS = 250;		// ダメージリアクション時間(ms)
 
 	//ID管理
 	inline static uint32_t s_nextId = 1;
@@ -114,7 +116,11 @@ private:
 	void EnterDeath();
 	void Air();
 	void Ground();
+	void HitBullet(const BulletGimmick::BulletSpec&, const Vector3&);
 	void SeparateFromOthers();
+
+	void SetLastHitBulletNo(BulletGimmick::BulletNo no)
+	{	m_lastHitBulletNo = no; }
 
 	//戦闘関連
 	int m_attackPower = 5;   // 敵ごとの攻撃力

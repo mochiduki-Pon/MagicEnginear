@@ -405,6 +405,17 @@ void enemy::Air()
 	}
 }
 
+void enemy::HitBullet(const BulletGimmick::BulletSpec& sp, const Vector3& fromPos)
+{
+	m_hitFromExplosion = false;
+	m_kbH = sp.kbH;
+	m_kbV = sp.kbV;
+	//m_hitFromPos = fromPos; // dir計算に使うなら
+	m_damageImpulseDone = false;
+	m_reaction = Reaction::Damage;
+	m_damageRemainMs = DAMAGE_REMAIN_MS; // 既存の値
+}
+
 void enemy::update(uint64_t dt)
 {
 	field* field = ((TutorialScene*)m_ownerscene)->getfield();
@@ -440,49 +451,60 @@ void enemy::update(uint64_t dt)
 		{
 		case Reaction::None:
 			break;
-
 		case Reaction::Damage:
 		{
 			if (!m_damageImpulseDone)
 			{
 				m_damageImpulseDone = true;
-
-				player* p = ((TutorialScene*)m_ownerscene)->getPlayer();
+				
+				// 方向計算
+				 player* p = ((TutorialScene*)m_ownerscene)->getPlayer();
 				Vector3 dir = m_srt.pos - p->getSRT().pos;
 				dir.y = 0.0f;
-				if (dir.LengthSquared() < 1e-6f) dir = Vector3(0, 0, 1);
+				
+				if (dir.LengthSquared() < 1e-6f)
+				{
+					dir = Vector3(0, 0, 1);
+				}
+				
 				dir.Normalize();
-
-				if (m_hitFromExplosion) {  // 爆発経由
+				
+				const auto& sp = BulletGimmick::Spec(m_lastHitBulletNo);
+				// ノックバック
+				m_kbH = sp.kbH;
+				m_kbV = sp.kbV;
+				// 爆発ノックバック
+				if (m_hitFromExplosion)
+				{
 					m_kbH = 14.0f;
 					m_kbV = 12.0f;
 				}
-				else {                   // ショット経由
-					m_kbH = 5.0f;
-					m_kbV = 8.0f;
-				}
-
+				
 				m_hitFromExplosion = false;
+				
+				// 速度に反映
 				m_Velocity += dir * m_kbH;
 				m_Velocity.y += m_kbV;
 				m_onground = false;
 			}
-			if (m_damageRemainMs > 0) timeutil::SubTime(m_damageRemainMs, dt);
+
+			if (m_damageRemainMs > 0)
+			{
+				timeutil::SubTime(m_damageRemainMs, dt);
+			}
 
 			if (m_damageRemainMs == 0)
 			{
 				m_reaction = Reaction::None;
 
-				// 致死だったらこのタイミングで死亡確定
 				if (m_pendingKill)
 				{
 					m_pendingKill = false;
 					Kill();
-					break;
 				}
 			}
 			break;
-		}
+}
 
 		case Reaction::Stun:
 			break;

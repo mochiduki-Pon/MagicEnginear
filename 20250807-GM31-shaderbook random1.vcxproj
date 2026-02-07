@@ -300,6 +300,7 @@
     <ClInclude Include="system\transform.h" />
     <ClInclude Include="system\TriangleDrawer.h" />
     <ClInclude Include="system\utility.h" />
+    <ClInclude Include="Trap.h" />
     <ClInclude Include="UI.h" />
     <ClInclude Include="utility\blobshadow.h" />
     <ClInclude Include="utility\enumdebug.h" />

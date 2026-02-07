@@ -278,6 +278,7 @@ void TutorialScene::CollisionStep()
 	const bool hasAliveBullet = AnyAlive(
 		m_playerBullets,[](const PlayerBullet& b) { return b.GetisAlive(); });
 
+	// 敵がいるか
 	const bool hasAliveEnemy = AnyAlive(
 		m_enemies,[](const enemy& e) { return e.IsAlive(); });
 
@@ -517,7 +518,7 @@ void TutorialScene::SpawnResource(const Vector3& pos)
 	}
 }
 
-// 弾ギミック(箱)
+// 弾箱ソート
 PlayerBullet* TutorialScene::TryReserveBullet()
 {
 	// 空いている箱を先頭から探す
@@ -527,10 +528,10 @@ PlayerBullet* TutorialScene::TryReserveBullet()
 
 		if (!pb->GetisAlive())
 		{
-			return pb.get();   // この箱を使う
+			return pb.get();
 		}
 	}
-	return nullptr; // 全部埋まっている
+	return nullptr;
 }
 
 void TutorialScene::GameOver() {
@@ -592,16 +593,13 @@ void TutorialScene::update(uint64_t deltatime)
 	// ショット処理
 	if (m_player->ConsumeShotFlag())
 	{
-		// Trapコスト
-		static constexpr int TRAP_COST = 10;
-
 		const BulletGimmick::BulletNo no = m_player->GetSelectedNo();
 		const auto& sp = BulletGimmick::Spec(no);
 
-		 //Trap支払いチェック debug用時はコメントアウト
-		if (sp.isTrap)
+		// MP消費
+		if (sp.mpCost > 0)
 		{
-			//if (!m_player->ConsumeMp(TRAP_COST)) return;
+			if (!m_player->ConsumeMp(sp.mpCost)) return;
 		}
 
 		PlayerBullet* pb = TryReserveBullet();

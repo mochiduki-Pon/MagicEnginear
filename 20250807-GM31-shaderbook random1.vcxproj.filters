@@ -539,6 +539,9 @@
     <ClInclude Include="gameobject\BaceEnemy.h">
       <Filter>ソース ファイル\gameobject</Filter>
     </ClInclude>
+    <ClInclude Include="Trap.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\common.hlsl">

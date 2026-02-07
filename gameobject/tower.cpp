@@ -43,6 +43,7 @@ void tower::OnDMF()
 	m_damageRemainMs = DAMAGE_FLASH_MS;
 }
 
+// タワーがダメージを受ける
 bool tower::UnderAtack(int amount)
 {
 	if (m_sts == Status::Dead) return false;
@@ -63,6 +64,7 @@ bool tower::UnderAtack(int amount)
 	return true;
 }
 
+// タワーが破壊されたか
 bool tower::IsEnd() const
 {
 	return m_sts == Status::Dead;
@@ -95,13 +97,14 @@ void tower::update(uint64_t dt)
 	}
 	else
 	{
-		// フラッシュしてない時だけ HP を見る
+		// フラッシュしてない時だけHPを見る
 		if (m_hp <= m_maxHp / 2)
 			m_vstate = VisualState::Danger;
 		else
 			m_vstate = VisualState::Normal;
 	}
 }
+
 
 void tower::ApplyDrawColor() const
 {
@@ -122,32 +125,6 @@ void tower::ApplyDrawColor() const
 	}
 }
 
-//void tower::draw(uint64_t dt)
-//{
-//	static bool inited = false;
-//	if (!inited) { CylinderDrawerInit(); inited = true; }
-//
-//	const auto c = GetCylinder();
-//	const float height = (c.top - c.bottom).Length();
-//
-//	//Matrix4x4 mtx = m_srt.GetMatrix();
-//	SRT drawSrt = m_srt;   // ← 値コピー
-//	drawSrt.pos.y += m_OffsetY;
-//	Matrix4x4 mtx = drawSrt.GetMatrix();
-//	Renderer::SetWorldMatrix(&mtx);
-//
-//	m_staticmeshshader->SetGPU();
-//
-//	ApplyDrawColor();
-//
-//	//CylinderDrawerDraw(
-//	//	c.radius,
-//	//	height,
-//	//	Color(0.0f, 0.7f, 1.0f, 0.08f),
-//	//	c.bottom.x, c.bottom.y, c.bottom.z);
-//
-//}
-
 void tower::draw(uint64_t)
 {
 	if (m_sts == Status::Dead)
@@ -165,8 +142,7 @@ void tower::draw(uint64_t)
 	Renderer::SetWorldMatrix(&mtx);
 	m_staticmeshshader->SetGPU();
 
-	switch (m_vstate)
-	{
+	switch (m_vstate){
 	case VisualState::DMF:
 	{
 		float t = float(m_damageRemainMs) / DAMAGE_FLASH_MS;
@@ -174,14 +150,17 @@ void tower::draw(uint64_t)
 		m_staticmeshrenderer->Draw(Color(flash, flash, flash, 1.0f));
 		break;
 	}
-	case VisualState::Danger:{
+	case VisualState::Danger:
+	{
 		const Color DiffuseColor = Color(1.2f, 1.2f, 0.15f, 0.35f);
 		m_staticmeshrenderer->Draw(DiffuseColor);
-		break;}
-	default: {
-		Color DiffuseColor = Color(1.0f, 0.0f, 0.3f, 0.5f); m_staticmeshrenderer->Draw(DiffuseColor);//0.3悪くない
-		break;}
+		break;
 	}
+	default: 
+	{
+		Color DiffuseColor = Color(1.0f, 0.0f, 0.3f, 0.5f); m_staticmeshrenderer->Draw(DiffuseColor);
+		break;
+	}}
 
 	CylinderDrawerDraw(
 	c.radius,
