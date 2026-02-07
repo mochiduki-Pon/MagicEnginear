@@ -25,7 +25,7 @@ void Resource::init() {
 	vtx.Position.x = -m_width / 2.0f;
 	vtx.Position.y = m_height;
 	vtx.Position.z = 0.0f;
-	vtx.Diffuse = Color(1, 1, 1, 0.6);
+	vtx.Diffuse = Color(1.0f, 1.0f, 1.0f, 0.6f);
 	vtx.Normal = Vector3(0, 0, -1);
 	vtx.TexCoord = Vector2(u[0], v[0]);
 	m_vertices.push_back(vtx);

@@ -22,7 +22,7 @@ void PlayerBullet::init() {
 		vtx.Position.x = -m_width / 2.0f;
 		vtx.Position.y = m_height;
 		vtx.Position.z = 0.0f;
-		vtx.Diffuse = Color(1, 1, 1, 0.6);
+		vtx.Diffuse = Color(1.0f, 1.0f, 1.0f, 0.6f);
 		vtx.Normal = Vector3(0, 0, -1);
 		vtx.TexCoord = Vector2(u[0], v[0]);
 		m_vertices.push_back(vtx);
@@ -30,7 +30,7 @@ void PlayerBullet::init() {
 		vtx.Position.x = m_width / 2.0f;
 		vtx.Position.y = m_height;
 		vtx.Position.z = 0.0f;
-		vtx.Diffuse = Color(1, 1, 1, 0.6);
+		vtx.Diffuse = Color(1.0f, 1.0f, 1.0f, 0.6f);
 		vtx.Normal = Vector3(0, 0, -1);
 		vtx.TexCoord = Vector2(u[1], v[1]);
 		m_vertices.push_back(vtx);
@@ -38,7 +38,7 @@ void PlayerBullet::init() {
 		vtx.Position.x = -m_width / 2.0f;
 		vtx.Position.y = 0.0f;
 		vtx.Position.z = 0.0f;
-		vtx.Diffuse = Color(0, 1, 1, 0.6);
+		vtx.Diffuse = Color(0.0f, 1.0f, 1.0f, 0.6f);
 		vtx.Normal = Vector3(0, 0, -1);
 		vtx.TexCoord = Vector2(u[2], v[2]);
 		m_vertices.push_back(vtx);
@@ -46,7 +46,7 @@ void PlayerBullet::init() {
 		vtx.Position.x = m_width / 2.0f;
 		vtx.Position.y = 0.0f;
 		vtx.Position.z = 0.0f;
-		vtx.Diffuse = Color(0, 0, 1, 0.6);
+		vtx.Diffuse = Color(0.0f, 0.0f, 1.0f, 0.6f);
 		vtx.Normal = Vector3(0, 0, -1);
 		vtx.TexCoord = Vector2(u[3], v[3]);
 		m_vertices.push_back(vtx);
@@ -63,7 +63,7 @@ void PlayerBullet::init() {
 	MATERIAL	mtrl;
 	mtrl.Ambient = Color(0.15f, 0.15f, 0.05f, 0);
 	//mtrl.Ambient = Color(0, 0, 0, 0);
-	mtrl.Diffuse = Color(1.2, 1.2, 1.2, 1);
+	mtrl.Diffuse = Color(1.2f, 1.2f, 1.2f, 1.0f);
 	mtrl.Emission = Color(0, 0, 0, 0);
 	mtrl.Specular = Color(0, 0, 0, 0);
 	mtrl.Shiness = 0;

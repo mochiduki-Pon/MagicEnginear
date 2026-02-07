@@ -18,7 +18,7 @@ void enemy::init()
 	m_meshrenderer = MeshManager::getRenderer<CStaticMeshRenderer>("256Mouse.fbx");
 	m_shader = MeshManager::getShader<CShader>("lightshader");
 
-	m_srt.scale = Vector3(0.7, 0.7, 0.7);
+	m_srt.scale = Vector3(0.7f, 0.7f, 0.7f);
 
 	//ID“o˜^
 	m_id = s_nextId++;
@@ -280,9 +280,9 @@ void enemy::OnDamage()
 int enemy::BaseDropRand()
 {
 	auto& rng = RandomEngine::tls();
-	float r = rng.uniformReal(0.0f, 1.0f);
-	if (r < 0.25f) return 3;
-	if (r < 0.28f) return 4;
+	double r = rng.uniformReal(0.0, 1.0);
+	if (r < 0.25) return 3;
+	if (r < 0.28) return 4;
 	return 2;
 }
 

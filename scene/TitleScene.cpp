@@ -44,7 +44,12 @@ void TitleScene::init()
     m_plateSelected[1] = std::make_unique<CSprite>(256, 60, "assets/texture/f1408_41.png", UV_FULL);
 
     m_cursor = std::make_unique<CSprite>(50, 50, "assets/texture/914610.png", UV_FULL);
-    m_accept = std::make_unique<CSprite>(390 * 0.4f, 228 * 0.4f, "assets/texture/Abotan.png", UV_FULL);
+    m_accept = std::make_unique<CSprite>(
+        static_cast<int>(390 * 0.4f),
+        static_cast<int>(228 * 0.4f),
+        "assets/texture/Abotan.png",
+        UV_FULL
+    );
 
     m_circle = std::make_unique<CSprite>(256, 256, "assets/texture/syabon.png", UV_FULL);
 

@@ -82,7 +82,7 @@ private:
 
 	// 描画
 	CVertexBuffer<VERTEX_3D>	m_VertexBuffer;				// 頂点バッファ
-	CShader* m_shader;										// シェーダー
+	CShader* m_shader = nullptr;							// シェーダー
 	CMaterial					m_Material;					// マテリアル
 	CTexture					m_Texture;					// テクスチャ
 

@@ -23,6 +23,7 @@ public:
 	void init() override;
 	void dispose() override;
 
+
 	struct Face {
 		int		idx[3];
 	};
@@ -52,7 +53,7 @@ public:
 	const Vector3& GetDir() const { return m_dir; }
 	void ResetLifeTime() { m_lifeTime = 0.0f; }
 
-	BulletGimmick::BulletNo m_selectedNo;
+	BulletGimmick::BulletNo m_selectedNo = BulletGimmick::BulletNo::WaterShot;
 	BulletGimmick::BulletNo GetNo() const { return m_no; }
 
 	// 発射設置初期化
@@ -85,7 +86,7 @@ private:
 	uint64_t m_maxLifeMs = 0;      // 寿命(ms)
 
 	bool isAlive = false;
-	bool     m_triggered;  // Trapが1回発動済みか
+	bool m_triggered = false;  // Trapが1回発動済みか
 
 	float m_width = 10.0f;
 	float m_height = 10.0f;
@@ -102,14 +103,14 @@ private:
 	// 遠距離当たり判定半径
 	float m_collisionRadius = 10.0f;
 
-	uint8_t m_actorNo;//弾のアクターナンバー
+	uint8_t m_actorNo = 0;//弾のアクターナンバー
 
 	void ResetForSpawn();
 	void VisualGimmick();
 
 	CVertexBuffer<VERTEX_3D>	m_VertexBuffer;
 
-	CShader*					m_shader;
+	CShader*					m_shader = nullptr;
 	CMaterial					m_Material;
 	CTexture					m_Texture;
 

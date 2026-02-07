@@ -878,8 +878,6 @@ void TutorialScene::draw(uint64_t deltatime)
 	// ƒvƒŒƒCƒ„‚ð•`‰æ
 	m_player->draw(deltatime);
 	
-
-
 	//Bullet•`‰æ
 	for (auto& pb : m_playerBullets) {
 		pb->draw(deltatime);
@@ -1202,8 +1200,8 @@ void TutorialScene::SpawnPickup(const Vector3& pos, int count)
 	for (int i = 0; i < count; ++i)
 	{
 		Vector3 p = pos;
-		p.x += rng.uniformReal(-20.0f, 20.0f);
-		p.z += rng.uniformReal(-20.0f, 20.0f);
+		p.x += static_cast<float>(rng.uniformReal(-20.0, 20.0));
+		p.z += static_cast<float>(rng.uniformReal(-20.0, 20.0));
 		SpawnResource(p);
 	}
 }

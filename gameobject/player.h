@@ -23,6 +23,7 @@ public:
 		m_maxMp(300),
 		m_mp(0),
 		m_collisionRadius(15.0f),
+		m_selectedNo(BulletGimmick::BulletNo::WaterShot),
 
 		m_mesh(nullptr),
 		m_meshrenderer(nullptr),
@@ -107,7 +108,7 @@ private:
 	PlayerState  m_playersts = PlayerState::Alive;
 	PlayerReact m_react = PlayerReact::None;
 	PlayerActState m_actstate = PlayerActState::Idle;
-	BulletGimmick::BulletNo m_no;
+	BulletGimmick::BulletNo m_no = BulletGimmick::BulletNo::WaterShot;
 	BulletGimmick::BulletNo m_selectedNo;
 	BulletGimmick::Element m_element = BulletGimmick::Element::Water;
 	BulletMode   m_bulletMode = BulletMode::Shot;

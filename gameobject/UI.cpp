@@ -73,30 +73,56 @@ void UI::Init()
     if (m_inited) return;
     m_inited = true;
 
-    //m_bg = std::make_unique<CSprite>(512*0.7f, 76*0.7f, "assets/texture/f1263_6.png");
-	m_hpplate = std::make_unique<CSprite>(512 * 0.7f, 76 * 0.7f, "assets/texture/f1263_6.png");
-    m_face = std::make_unique<CSprite>(300*0.5f, 250*0.5f, "assets/texture/NekoF.png");
+    m_hpplate = std::make_unique<CSprite>(
+        static_cast<int>(512 * 0.7f),
+        static_cast<int>(76 * 0.7f),
+        "assets/texture/f1263_6.png");
+
+    m_face = std::make_unique<CSprite>(
+        static_cast<int>(300 * 0.5f),
+        static_cast<int>(250 * 0.5f),
+        "assets/texture/NekoF.png");
+
     m_fillG = std::make_unique<CSprite>(260, 22, "assets/texture/effectff.png");
     m_fillR = std::make_unique<CSprite>(260, 22, "assets/texture/effectr.png");
     m_fillB = std::make_unique<CSprite>(260, 22, "assets/texture/effect001.png");
     m_fillW = std::make_unique<CSprite>(260, 22, "assets/texture/effect111.png");
-    m_shotT = std::make_unique<CSprite>(256*0.5f, 256*0.5f, "assets/texture/SetShot.png");
-    m_shotTtrp = std::make_unique<CSprite>(256 * 0.5f, 256 * 0.5f, "assets/texture/torap.png");
-    m_shotTsht = std::make_unique<CSprite>(256 * 0.5f, 256 * 0.5f, "assets/texture/shot.png");
-    m_clearmin = std::make_unique<CSprite>(256 * 0.3f, 256 * 0.3f, "assets/texture/Clearmin1.png");
-    m_resource = std::make_unique<CSprite>(256 * 0.3f, 256 * 0.3f, "assets/texture/orblight_D.png");
+    m_shotT = std::make_unique<CSprite>(
+        static_cast<int>(256 * 0.5f),
+        static_cast<int>(256 * 0.5f),
+        "assets/texture/SetShot.png");
+
+    m_shotTtrp = std::make_unique<CSprite>(
+        static_cast<int>(256 * 0.5f),
+        static_cast<int>(256 * 0.5f),
+        "assets/texture/torap.png");
+
+    m_shotTsht = std::make_unique<CSprite>(
+        static_cast<int>(256 * 0.5f),
+        static_cast<int>(256 * 0.5f),
+        "assets/texture/shot.png");
+
+    m_clearmin = std::make_unique<CSprite>(
+        static_cast<int>(256 * 0.3f),
+        static_cast<int>(256 * 0.3f),
+        "assets/texture/Clearmin1.png");
+
+    m_resource = std::make_unique<CSprite>(
+        static_cast<int>(256 * 0.3f),
+        static_cast<int>(256 * 0.3f),
+        "assets/texture/orblight_D.png");
 
     m_hp01 = 1.0f;
     m_hpSmooth = 260.0f;
 
     m_256 = std::make_unique<CSprite>(
-        512.0f * 0.7f,
-        513.0f * 0.7f,
+        static_cast<int>(512.0f * 0.7f),
+        static_cast<int>(513.0f * 0.7f),
         "assets/texture/f0971_1.png");
 
     m_stage = std::make_unique<CSprite>(
-        700.0f * 0.15f,
-        200.0f * 0.15f,
+        static_cast<int>(700.0f * 0.15f),
+        static_cast<int>(200.0f * 0.15f),
         "assets/texture/Stage.png");
 
 	// 数字スプライト
