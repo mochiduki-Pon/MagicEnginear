@@ -24,11 +24,13 @@ void GameOverScene::init()
         Vector2(0, 1), Vector2(1, 1)
     };
 
-    m_plate[0] = std::make_unique<CSprite>(512 * 0.5f, 120 * 0.5f, "assets/texture/f1408_1.png", UV_FULL);
-    m_plate[1] = std::make_unique<CSprite>(512 * 0.5f, 120 * 0.5f, "assets/texture/f1408_1.png", UV_FULL);
+    //ボタンプレート
+    m_plate[0] = std::make_unique<CSprite>(static_cast<int>(512.0f * 0.5f), static_cast<int>(120.0f * 0.5f), "assets/texture/f1408_1.png", UV_FULL);
+    m_plate[1] = std::make_unique<CSprite>(static_cast<int>(512.0f * 0.5f), static_cast<int>(120.0f * 0.5f), "assets/texture/f1408_1.png", UV_FULL);
 
+    //カーソル
     m_cursor = std::make_unique<CSprite>(50, 50, "assets/texture/914610.png", UV_FULL);
-    m_accept = std::make_unique<CSprite>(390 * 0.4f, 228 * 0.4f, "assets/texture/Abotan.png", UV_FULL);
+    m_accept = std::make_unique<CSprite>(static_cast<int>(390.0f * 0.4f), static_cast<int>(228.0f * 0.4f), "assets/texture/Abotan.png", UV_FULL);
 
     m_over = std::make_unique<CSprite>(300, 300, "assets/texture/over.png", UV_FULL);
     m_bg = std::make_unique<CSprite>(
@@ -42,13 +44,14 @@ void GameOverScene::init()
     // 状態初期化
     m_select = 0;
     m_decided = false;
-    m_enterFade = true;          // 使うなら
-    m_circleScale = START_SCALE; // ★大きい円から
+    m_enterFade = true;
+    m_circleScale = START_SCALE;
     m_fadeStart = Time::Get().Now();
 
     GetXAud()->soundSEPlay((int)SoundSEAssets::cEND, -0.5f);
 }
 
+// 行中央Y座標
 float GameOverScene::RowCenterY(int idx, float cy) const
 {
     static constexpr float BASE_Y_OFFSET = -50.0f;
@@ -56,6 +59,7 @@ float GameOverScene::RowCenterY(int idx, float cy) const
     return y0 + idx * ROW_SPACING;
 }
 
+// プレート内文字矩形
 D2D1_RECT_F GameOverScene::PlateTextRect(float cx, float rowCY) const
 {
     const float left = (cx - PLATE_W * 0.5f) + TEXT_PAD_L;
@@ -63,11 +67,13 @@ D2D1_RECT_F GameOverScene::PlateTextRect(float cx, float rowCY) const
     return D2D1_RECT_F{ left, rowCY - TEXT_HALF_H, right, rowCY + TEXT_HALF_H };
 }
 
+// カーソルX座標
 float GameOverScene::CursorX(float cx) const
 {
     return (cx - PLATE_W * 0.5f) + CURSOR_X_INSET;
 }
 
+// メニュー文字描画
 void GameOverScene::DrawMenuText(const char* text, float cx, float rowCY)
 {
     DirectWrite::GetInstance().DrawString(
@@ -81,7 +87,7 @@ void GameOverScene::DrawMenuText(const char* text, float cx, float rowCY)
 void GameOverScene::update(uint64_t)
 {
     static constexpr float FADE_MS = 800.0f; // フェード時間
-    static constexpr float START_SCALE = 8.0f;   // 端まで届かせたいなら 8.0f などに
+	static constexpr float START_SCALE = 8.0f; // 円の最大拡大率
 
     if (m_enterFade)
     {
@@ -181,12 +187,6 @@ void GameOverScene::draw(uint64_t)
     if (m_decided && m_accept)
         m_accept->Draw(scale, rot, Vector3(menuX + ACCEPT_OFFSET_X, selY + ACCEPT_OFFSET_Y, 0));
 
-    //if (m_circle && m_circleScale > 0.0f)
-    //{
-    //    const Vector3 s(m_circleScale, m_circleScale, 1.0f);
-    //    m_circle->Draw(s, Vector3(0, 0, 0),
-    //        Vector3(cx, cy, 0));
-    //}
     if (m_circle && m_circleScale > 0.0f && (m_enterFade || m_decided))
     {
         const Vector3 s(m_circleScale, m_circleScale, 1.0f);

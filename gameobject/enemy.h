@@ -98,7 +98,7 @@ private:
 	static constexpr float HIT_FLASH_MAX_MULTIPLIER = 2.5f;	// ダメージ点滅最大倍率
 	static constexpr uint64_t DAMAGE_FLASH_MS = 120;		// ダメージ点滅時間(ms)
 	static constexpr uint64_t DEAD_VISIBLE_MS = 600;		// 死体残留時間(ms)
-	static constexpr float ENEMY_FALL_Y = -190.0f;
+	static constexpr float ENEMY_FALL_Y = -190.0f;			// 落下最大
 	static constexpr uint64_t DAMAGE_REMAIN_MS = 100;		// ダメージリアクション時間(ms)
 
 	//ID管理

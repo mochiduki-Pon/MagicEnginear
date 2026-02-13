@@ -73,6 +73,8 @@ void PlayerBullet::init() {
 	// テクスチャロード
 	bool sts = m_Texture.Load("assets/texture/Circle256.png");
 	assert(sts == true);
+	m_currentTexturePath = "assets/texture/Circle256.png";
+	
 
 	SRT srt=getSRT();
 	srt.scale = { 2,2,2 };
@@ -109,6 +111,14 @@ void PlayerBullet::VisualGimmick()
 
 		m_VertexBuffer.Create(m_vertices);
 	}
+
+	// テクスチャ変更
+	if (vs.texture != nullptr && vs.texture[0] != '\0' && vs.texture != m_currentTexturePath)
+	{
+		const bool sts = m_Texture.Load(vs.texture);
+		assert(sts == true);
+		m_currentTexturePath = vs.texture;
+	}
 }
 
 Vector3 PlayerBullet::GetColliderCenter() const
@@ -116,16 +126,19 @@ Vector3 PlayerBullet::GetColliderCenter() const
 	return m_srt.pos + Vector3(0, GetCollisionRadius(), 0);
 }
 
+// 爆発センター
 Vector3 PlayerBullet::GetExplosionCenter() const
 {
 	return m_srt.pos; // 足元起爆修正
 }
 
+// 爆発半径
 float PlayerBullet::GetExplosionRadius() const
 {
 	return BulletGimmick::Spec(m_no).radius;
 }
 
+// 爆発したか？
 void PlayerBullet::Explode()
 {
 	if (m_triggered) return;
@@ -147,7 +160,6 @@ void PlayerBullet::Spawn(const Vector3& pos, const Vector3& dir, BulletGimmick::
 	m_no = no;
 	m_spec = BulletGimmick::Spec(m_no);
 
-	// 既存
 	m_speed = m_spec.speed;
 	m_maxLife = m_spec.lifeSec;
 	m_radius = m_spec.radius;
@@ -160,12 +172,14 @@ void PlayerBullet::Spawn(const Vector3& pos, const Vector3& dir, BulletGimmick::
 		<< " dmg=" << BulletGimmick::Spec(m_no).damage
 		<< " vScale=" << BulletGimmick::VSpec(m_no).scale
 		<< "\n";
+	std::cout << "BulletNo changed to: " << (int)m_no << std::endl;
 }
 
 void PlayerBullet::update(uint64_t dt)
 {
 	if (!isAlive) return;
 
+	// 寿命チェック
 	const uint64_t elapsed = Time::ElapsedMs(m_spawnAt);
 	if (elapsed >= m_maxLifeMs)
 	{
@@ -173,6 +187,7 @@ void PlayerBullet::update(uint64_t dt)
 		return;
 	}
 
+	//Trap部分
 	if (m_spec.isTrap)
 	{
 		// Trap 挙動

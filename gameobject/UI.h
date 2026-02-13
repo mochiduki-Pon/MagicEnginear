@@ -16,9 +16,9 @@ class UI {
         int aliveBullet = 0;
         int aliveTrap = 0;
 
-        BulletGimmick::Element element;
-        BulletGimmick::BulletMode mode;
-        BulletGimmick::BulletSpec spec;
+        BulletGimmick::Element element = BulletGimmick::Element::Water;
+        BulletGimmick::BulletMode mode = BulletGimmick::BulletMode::Shot;
+        BulletGimmick::BulletSpec spec{};
     };
 
 public:
@@ -34,6 +34,7 @@ public:
     void SetStageIndex(int stageIndex){ m_stageIndex = stageIndex; }
     void SetTrapMode(bool isTrap);// 弾モードください
 	void SetMp(int mp) { m_mpUi = mp; }// MPください
+    void SetCurrentBulletNo(BulletGimmick::BulletNo no);//ナンバー下さい
 
     //HPゲージが空かどうか
     bool IsHpVisualEmpty() const { return m_hpSmooth <= 0.5f; }
@@ -52,7 +53,7 @@ private:
     float m_enemyGaugeW = 0.0f;
     int   m_enemyTotalSeen = 1;  // Wave中の最大分母
 
-    std::unique_ptr<CSprite> m_bg;
+    //スプライト
     std::unique_ptr<CSprite> m_hpplate;
     std::unique_ptr<CSprite> m_fillG;
 	std::unique_ptr<CSprite> m_fillR;
@@ -66,12 +67,18 @@ private:
     std::unique_ptr<CSprite> m_shotTsht;
     std::unique_ptr<CSprite> m_clearmin;
     std::unique_ptr<CSprite> m_resource;
+    std::unique_ptr<CSprite> m_syabon;
+    std::unique_ptr<CSprite> m_fireicon;
+    std::unique_ptr<CSprite> m_hukidashi;
 
-    int m_stageIndex = 1;
-    float m_hp01 = 1.0f;       // 表示用
-    float m_hpSmooth = 1.0f;   // 見栄え用（ヌルっと）
-	int m_mpUi = 0;            // MP表示用
-    float m_waveW = 260.0f;    // ゲージ現在幅
+    int m_stageIndex = 1;       //stage
+    float m_hp01 = 1.0f;        // 表示用
+    float m_hpSmooth = 1.0f;    // 見栄え用
+	int m_mpUi = 0;             // MP表示用
+    float m_waveW = 260.0f;     // ゲージ現在幅
+
+    BulletGimmick::BulletNo m_currentNo = BulletGimmick::BulletNo::WaterShot;
+    UIState m_state{};
 
     void DrawMp(int mp);
 

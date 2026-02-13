@@ -34,9 +34,6 @@ void TitleScene::init()
     XAudSound::GetInstance()->soundBGMPlay
     ((int)SoundBGAssets::Title1);
 
-
-    //m_plate[0] = std::make_unique<CSprite>(512 * 0.5f, 120 * 0.5f, "assets/texture/f1408_4.png", UV_FULL);
-    //m_plate[1] = std::make_unique<CSprite>(512 * 0.5f, 120 * 0.5f, "assets/texture/f1409_2.png", UV_FULL);
     m_plateNormal[0] = std::make_unique<CSprite>(256, 60, "assets/texture/f1408_4.png", UV_FULL);
     m_plateSelected[0] = std::make_unique<CSprite>(256, 60, "assets/texture/f1408_41.png", UV_FULL);
 
@@ -117,8 +114,15 @@ void TitleScene::update(uint64_t)
     {
         if (Time::ElapsedMs(m_decideStart, now) > DECIDE_WAIT_MS)
         {
-            if (m_select == 0) SceneManager::SetCurrentScene("TutorialScene");
-            else               SceneManager::SetCurrentScene("TitleScene");
+            if (m_select == 0)
+            {
+                SceneManager::SetCurrentScene("TutorialScene");
+            }
+            else
+            {
+                // END
+                PostQuitMessage(0);
+            }
         }
         return;
     }

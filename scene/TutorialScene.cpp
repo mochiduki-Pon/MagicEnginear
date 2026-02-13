@@ -15,7 +15,7 @@
 #include "../system/scenemanager.h"
 #include "../sound.h"
 #include "../gameobject/resource.h"
-#include "../system/renderer.h"
+#include "../gameobject/boxcreate.h"
 
 namespace {
 
@@ -43,6 +43,8 @@ namespace {
 
 		pos.z = ClampFloat(pos.z, minZ, maxZ);
 	}
+
+	constexpr float NO_SUPPORT_Y = -1.0e9f;
 
 }
 
@@ -120,22 +122,6 @@ void TutorialScene::debugUICamera() {
 	ImGui::Separator();
 	ImGui::Separator();
 	ImGui::SliderFloat3("pickuppos ", &m_pickuppos.x, -10000.0f, 10000.0f);
-
-	ImGui::End();
-}
-
-// フィールド再作成
-void TutorialScene::debugPlayerInfo() {
-
-	ImGui::Begin("debug Player Info");
-
-	SRT srt = m_player->getSRT();
-	Vector3 v = m_player->GetVelocity();
-	Vector3 a = m_player->GetAcceleration();
-
-	ImGui::SliderFloat3("pos", &srt.pos.x, 0, 10);
-	ImGui::SliderFloat3("veclocity", &v.x, 0, 10);
-	ImGui::SliderFloat3("accelerrartion", &a.x, 0, 10);
 
 	ImGui::End();
 }
@@ -660,11 +646,11 @@ void TutorialScene::update(uint64_t deltatime)
 	// 当たり判定
 	CollisionStep();
 
-	// ドア座標でXZをクランプ
 	if (m_player)
 	{
 		auto srt = m_player->getSRT();
 		ClampPosZ(srt.pos);
+
 		m_player->setSRT(srt);
 	}
 
@@ -791,7 +777,7 @@ void TutorialScene::draw(uint64_t deltatime)
 		sr->Draw();
 	}
 
-		{
+	{
 		auto* sr = MeshManager::getRenderer<CStaticMeshRenderer>("WallEntrance.fbx");
 		shader->SetGPU();
 
@@ -844,6 +830,7 @@ void TutorialScene::draw(uint64_t deltatime)
 	Renderer::SetDepthEnable(false);
 	Renderer::SetBlendState(BS_SUBTRACTION);
 
+	//enemy
 	for (auto& e : m_enemies)
 	{
 		if (!e || !e->IsAlive()) continue;
@@ -855,6 +842,7 @@ void TutorialScene::draw(uint64_t deltatime)
 		m_blobshadow->Draw(r, groundY, p.x, p.z);
 	}
 
+	//bullet
 	for (auto& pb : m_playerBullets)
 	{
 		if (!pb || !pb->GetisAlive()) continue;
@@ -930,20 +918,6 @@ void TutorialScene::draw(uint64_t deltatime)
 		);
 	}
 
-	{
-		SRT srt;
-		srt.pos = Vector3(0, 0, 880);
-		srt.scale = Vector3(0.8f, 0.8f, 0.8f);
-		srt.rot = Vector3(0, 0, 0);
-
-		CStaticMeshRenderer* sr = MeshManager::getRenderer<CStaticMeshRenderer>("Door.fbx");
-
-		Matrix4x4 mtx = srt.GetMatrix();
-		Renderer::SetWorldMatrix(&mtx);
-		shader->SetGPU();
-		sr->Draw();
-	}
-
 	//残数
 	FontData prev = m_fontdata;
 
@@ -1006,12 +980,6 @@ void TutorialScene::draw(uint64_t deltatime)
 		}
 	}
 
-	//壁デバッグ
-	//for (auto& w : m_walls) {
-	//	if (!w) continue;      // 未使用スロットは正常
-	//	w->draw(deltatime);
-	//}
-
 	UI::Get().UpdateEnemyGauge(
 		EnemyCounter::GetInstance().GetWaveKilled(),
 		EnemyCounter::GetInstance().GetWaveTotal());
@@ -1022,6 +990,7 @@ void TutorialScene::draw(uint64_t deltatime)
 	UI::Get().SetStageIndex(GetStageIndex());
 	UI::Get().Draw();
 	UI::Get().SetMp(m_player ? m_player->GetMp() : 0);
+	UI::Get().SetCurrentBulletNo(m_player->GetSelectedNo());
 }
 
 /**
@@ -1099,7 +1068,8 @@ void TutorialScene::init()
 		m_resource[i] = std::make_unique<Resource>();
 		m_resource[i]->init();
 		m_resource[i]->SetPlayer(getPlayer());
-		m_resource[i]->Kill(); // 待機（m_alive=false）
+		m_resource[i]->SetField(getfield());
+		m_resource[i]->Kill();
 	}
 
 	static const std::array<Vector2, 4> UV_FULL = {
@@ -1116,9 +1086,6 @@ void TutorialScene::init()
 	m_effectExplosion = std::make_unique<EffectSystem>();
 	m_effectExplosion->init();
 	SphereDrawerInit();
-	//ConeDrawerInit(false);
-	//// ライン描画
-	//LineDrawerInit();
 
 	// Door座標の当たり判定壁
 	{
@@ -1206,9 +1173,7 @@ void TutorialScene::SpawnPickup(const Vector3& pos, int count)
 	}
 }
 
-/**
- * @brief リソースを読み込む
- */
+//リソースを読み込む
 void TutorialScene::resourceLoader()
 {
 	// 光源計算なしシェーダー
@@ -1282,5 +1247,3 @@ void TutorialScene::resourceLoader()
 		MeshManager::RegisterMesh<CStaticMesh>("Door.fbx", std::move(smesh5));
 	}
 }
-
-//LineDrawer 線

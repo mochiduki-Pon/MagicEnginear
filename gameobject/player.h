@@ -57,6 +57,9 @@ public:
 	float getdepth() const { return m_depth; }
 	float GetCollisionRadius() const { return m_collisionRadius; }
 
+	// äOïî(Scenes)ë§ÇÃñ ÇÃê⁄ínèÛë‘Ç‡ìØä˙Ç∑ÇÈ
+	void ForceGround(float groundY, bool onGround);
+
 	Vector3 GetPlayerDir() { return m_vDir; }
 	Vector3& GetPlayerMove() { return m_move; }
 
@@ -104,14 +107,16 @@ public:
 
 private:
 
-
+	// Player
 	PlayerState  m_playersts = PlayerState::Alive;
 	PlayerReact m_react = PlayerReact::None;
 	PlayerActState m_actstate = PlayerActState::Idle;
+	// Bullet
 	BulletGimmick::BulletNo m_no = BulletGimmick::BulletNo::WaterShot;
 	BulletGimmick::BulletNo m_selectedNo;
 	BulletGimmick::Element m_element = BulletGimmick::Element::Water;
 	BulletMode   m_bulletMode = BulletMode::Shot;
+
 
 	static constexpr size_t ToIndex(BulletMode mode)
 	{

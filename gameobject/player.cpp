@@ -61,7 +61,6 @@ int player::ConsumeMpDelta()
 }
 
 
-
 // 障害物とのヒットチェック
 bool player::obstacleshitcheck() {
 
@@ -186,11 +185,13 @@ bool player::wallshitcheck(std::vector<wall::WallCollision>& hitwalls)
     return hitflag;
 }
 
+//MPチェック
 bool player::CanUseTrap(int cost) const
 {
 	return (cost > 0) && (m_mp >= cost);
 }
 
+//MP消費
 bool player::ConsumeMp(int cost)
 {
 	if (!CanUseTrap(cost)) return false;
@@ -199,6 +200,7 @@ bool player::ConsumeMp(int cost)
 	return true;
 }
 
+// ノックバック処理
 void player::Knockback(const Vector3& fromPos)
 {
 	//m_onground = false;
@@ -215,11 +217,29 @@ void player::Knockback(const Vector3& fromPos)
 	m_move += dir * kbH;
 }
 
+// 当たり判定の位置取得
 Vector3 player::GetColliderCenter() const
 {
 	return m_srt.pos + Vector3(0, GetCollisionRadius(), 0);
 }
 
+// 外部側の接地同期
+void player::ForceGround(float groundY, bool onGround)
+{
+	m_groundheight = groundY;
+	m_onground = onGround;
+
+	if (onGround)
+	{
+		if (m_Velocity.y < 0.0f) m_Velocity.y = 0.0f;
+		m_jumpFlg = false;
+
+		if (m_actstate == PlayerActState::Jump)
+			m_actstate = PlayerActState::Idle;
+	}
+}
+
+// ダメージ計算
 bool player::Damage(int amount)
 {
 	const auto now = Time::Get().Now();
@@ -247,6 +267,7 @@ void player::OnDamage()
 	m_damageRemainMs = DAMAGE_FLASH_MS;
 }
 
+// プレイヤー移動操作関数
 void player::PlayerHandle() {
 
 	m_Acceleration = Vector3(0, 0, 0);				// 加速度０クリア
@@ -261,7 +282,6 @@ void player::PlayerHandle() {
 			m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
 			m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
 
-			// 目標角度をセット
 			m_destrot.y = radian;
 
 		}
@@ -286,7 +306,6 @@ void player::PlayerHandle() {
 			m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
 			m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
 
-			// 目標角度をセット
 			m_destrot.y = radian;
 		}
 	}
@@ -302,7 +321,6 @@ void player::PlayerHandle() {
 			m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
 			m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
 
-			// 目標角度をセット
 			m_destrot.y = radian;
 
 		}
@@ -314,7 +332,6 @@ void player::PlayerHandle() {
 			m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
 			m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
 
-			// 目標角度をセット
 			m_destrot.y = radian;
 		}
 		else
@@ -326,7 +343,6 @@ void player::PlayerHandle() {
 			m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
 			m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
 
-			// 目標角度をセット
 			m_destrot.y = radian;
 		}
 	}
@@ -338,7 +354,6 @@ void player::PlayerHandle() {
 		m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
 		m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
 
-		// 目標角度をセット
 		m_destrot.y = PI;
 	}
 	else if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_S))
@@ -349,14 +364,15 @@ void player::PlayerHandle() {
 		m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
 		m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
 
-		// 目標角度をセット
 		m_destrot.y = 0.0f;
 	}
 
+	// State変更
 	if (m_move.LengthSquared() > 0.0f) {
 		m_actstate = PlayerActState::Walk;
 	}
 
+	// モデル回転
 	if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_RIGHT))
 	{// 左回転
 		m_destrot.y = m_srt.rot.y - VALUE_ROTATE_MODEL;
@@ -375,7 +391,6 @@ void player::PlayerHandle() {
 		}
 	}
 
-	// 目標角度と現在角度との差分を求める
 	float diffrot = m_destrot.y - m_srt.rot.y;
 	if (diffrot > PI)
 	{
@@ -386,7 +401,6 @@ void player::PlayerHandle() {
 		diffrot += PI * 2.0f;
 	}
 
-	// 比率計算
 	m_srt.rot.y += diffrot * RATE_ROTATE_MODEL;
 	if (m_srt.rot.y > PI)
 	{
@@ -397,6 +411,7 @@ void player::PlayerHandle() {
 		m_srt.rot.y += PI * 2.0f;
 	}
 
+	// 移動ベクトル補正してIdle状態
 	if (m_move.LengthSquared() < 0.0001f) {
 		m_move = Vector3(0, 0, 0);
 	}
@@ -418,17 +433,20 @@ void player::JumpHandle() {
 	}
 }
 
+// ショット変更時のID取得
 void player::ChangeBullet()
 {
 	m_bulletMode = (m_bulletMode == BulletMode::Shot) ? BulletMode::Trap : BulletMode::Shot;
 	m_selectedNo = (BulletGimmick::BulletNo)((uint8_t)m_element * 2u + (uint8_t)m_bulletMode);
 }
 
+// 選択中の弾種取得
 BulletGimmick::BulletNo player::GetSelectedNo() const
 {
 	return m_selectedNo;
 }
 
+//着火処理
 void player::ShotHandle()
 {
 	const bool trigger =
@@ -437,16 +455,25 @@ void player::ShotHandle()
 
 	m_shotFlg = false;
 
+	const auto no = GetSelectedNo();
+	const auto& spec = BulletGimmick::Spec(no);
+
+	// mode別CD Shot/Trap）
 	auto& cd = m_bulletcd[ToIndex(m_bulletMode)];
+
+	// 弾ごとのlate
+	cd.SetInterval(std::chrono::duration_cast<Time::Ms>(
+		std::chrono::duration<double>(spec.late)));
 
 	if (trigger && cd.Consume(Time::Get().Now()))
 	{
 		m_shotFlg = true;
 		XAudSound::GetInstance()->soundSEPlay((int)SoundSEAssets::shot1);
-		std::cout << "[Shoot] selectedNo=" << (int)GetSelectedNo() << "\n";
+		std::cout << "[Shoot] selectedNo=" << (int)no << "\n";
 	}
 }
 
+// ショットの方角
 void player::CheckShotDir() {
 
 	Vector3 dir;
@@ -456,9 +483,10 @@ void player::CheckShotDir() {
 
 	dir.Normalize();
 
-	SetPlayerDir(dir);   // m_vDir に反映
+	SetPlayerDir(dir);
 }
 
+// 属性とモードから弾種IDを取得 偶数送り
 static BulletGimmick::BulletNo ErementMode(int elementIndex, player::BulletMode mode)
 {
 	// elementIndex: 0=Water, 1=Fire, 2=Wind
@@ -467,6 +495,7 @@ static BulletGimmick::BulletNo ErementMode(int elementIndex, player::BulletMode 
 	return (BulletGimmick::BulletNo)(base + m);
 }
 
+// 属性変更処理
 void player::HandleElement()
 {
 	if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_1))
@@ -483,12 +512,12 @@ void player::HandleElement()
 		m_selectedNo = (BulletGimmick::BulletNo)((uint8_t)m_element * 2u + (uint8_t)m_bulletMode);
 	}
 
-	if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_3))
-	{
-		//XAudSound::GetInstance()->soundSEPlay((int)SoundSEAssets::change);
-		m_element = BulletGimmick::Element::Wind;
-		m_selectedNo = (BulletGimmick::BulletNo)((uint8_t)m_element * 2u + (uint8_t)m_bulletMode);
-	}
+	//if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_3))
+	//{
+	//	//XAudSound::GetInstance()->soundSEPlay((int)SoundSEAssets::change);
+	//	m_element = BulletGimmick::Element::Wind;
+	//	m_selectedNo = (BulletGimmick::BulletNo)((uint8_t)m_element * 2u + (uint8_t)m_bulletMode);
+	//}
 }
 
 void player::update(uint64_t dt)
@@ -506,7 +535,8 @@ void player::update(uint64_t dt)
 
 	switch (m_actstate)
 	{
-	case PlayerActState::Idle:
+		//待機
+		case PlayerActState::Idle:
 
 		PlayerHandle();
 		JumpHandle();
@@ -518,7 +548,8 @@ void player::update(uint64_t dt)
 
 		break;
 
-	case PlayerActState::Walk:
+		//移動状態
+		case PlayerActState::Walk:
 		PlayerHandle();
 		JumpHandle();
 
@@ -528,7 +559,8 @@ void player::update(uint64_t dt)
 
 		break;
 
-	case PlayerActState::Jump:
+		//ジャンプ状態
+		case PlayerActState::Jump:
 		PlayerHandle();
 
 		if (m_onground) { m_actstate = PlayerActState::Idle; }
@@ -540,6 +572,7 @@ void player::update(uint64_t dt)
 		m_prevActState = m_actstate;
 	}
 
+	// リアクション
 	switch (m_react)
 	{
 	case PlayerReact::None:

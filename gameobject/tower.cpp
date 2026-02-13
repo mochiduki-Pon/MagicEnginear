@@ -32,18 +32,20 @@ Call::Collision::BoundingCylinder tower::GetCylinder() const
 	return c;
 }
 
+// ダメージ間隔
 void tower::Reboot()
 {
 	m_cantAct = false;
 }
 
+// 被弾フラッシュ中
 void tower::OnDMF()
 {
 	m_vstate = VisualState::DMF;
 	m_damageRemainMs = DAMAGE_FLASH_MS;
 }
 
-// タワーがダメージを受ける
+// タワーダメージ
 bool tower::UnderAtack(int amount)
 {
 	if (m_sts == Status::Dead) return false;
@@ -105,7 +107,7 @@ void tower::update(uint64_t dt)
 	}
 }
 
-
+// タワー色を変更する
 void tower::ApplyDrawColor() const
 {
 	if (m_vstate == VisualState::DMF && m_damageRemainMs > 0)
@@ -135,8 +137,7 @@ void tower::draw(uint64_t)
 	const auto c = GetCylinder();
 	const float height = (c.top - c.bottom).Length();
 
-	//Matrix4x4 mtx = m_srt.GetMatrix();
-	SRT drawSrt = m_srt;   // ← 値コピー
+	SRT drawSrt = m_srt;
 	drawSrt.pos.y += m_OffsetY;
 	Matrix4x4 mtx = drawSrt.GetMatrix();
 	Renderer::SetWorldMatrix(&mtx);

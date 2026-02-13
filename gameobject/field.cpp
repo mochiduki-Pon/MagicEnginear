@@ -111,42 +111,6 @@ void field::init() {
 	MakePlaneEquatation();
 }
 
-//// 1D配列で2Dグリッドを持つ（row-major）
-//inline int Idx(int x, int y, int nCols) { return y * nCols + x; }
-//
-//void StepWave2D(
-//	float* next,        // out: n+1
-//	const float* prev,  // in : n
-//	const float* old,   // in : n-1
-//	const float* vel,   // in : 伝搬速度（セルごとでもOK）
-//	int nRows, int nCols,
-//	float dt, float dx, float dy)
-//{
-//	const float dtDIVdxy = (dt * dt) / (dx * dy); // PDFの dtDIVdxy 相当 :contentReference[oaicite:2]{index=2}
-//
-//	// 境界は固定（0更新）にしておく
-//	for (int y = 1; y < nRows - 1; ++y)
-//	{
-//		for (int x = 1; x < nCols - 1; ++x)
-//		{
-//			const int gid = Idx(x, y, nCols);
-//
-//			float value = 0.0f;
-//			value += prev[gid + 1] - 2.0f * prev[gid] + prev[gid - 1];
-//			value += prev[gid + nCols] - 2.0f * prev[gid] + prev[gid - nCols];
-//			value *= dtDIVdxy * vel[gid];
-//
-//			next[gid] = 2.0f * prev[gid] - old[gid] + value; // PDFは "- next[gid]" で old を使ってる :contentReference[oaicite:3]{index=3}
-//		}
-//	}
-//}
-
-//void AddImpulse(float* prev, int nRows, int nCols, int cx, int cy, float power)
-//{
-//	if (cx <= 0 || cx >= nCols - 1 || cy <= 0 || cy >= nRows - 1) return;
-//	prev[Idx(cx, cy, nCols)] += power;
-//}
-
 void field::update(uint64_t dt) {
 
 }
@@ -306,10 +270,6 @@ float field::GetHeight(Vector3 pos)
 // 現在位置の高さ情報を取得する（簡単な枝刈り付き）
 float field::GetHeight2(Vector3 pos)
 {
-	// 穴位置判定
-	//if (IsHoleXZ(pos)) {
-	//	return kHoleHeight;
-	//}
 
 	std::array<field::Face, 2> retfaces;			// 矩形を構成する三角形構成頂点インデックスを２個分
 	std::array<Vector3, 3> vertices1;				// 矩形を構成する三角形１構成頂点３個

@@ -33,7 +33,7 @@ void Resource::init() {
 	vtx.Position.x = m_width / 2.0f;
 	vtx.Position.y = m_height;
 	vtx.Position.z = 0.0f;
-	vtx.Diffuse = Color(1, 1, 1, 0.6);
+	vtx.Diffuse = Color(1.0f, 1.0f, 1.0f, 0.6f);
 	vtx.Normal = Vector3(0, 0, -1);
 	vtx.TexCoord = Vector2(u[1], v[1]);
 	m_vertices.push_back(vtx);
@@ -41,7 +41,7 @@ void Resource::init() {
 	vtx.Position.x = -m_width / 2.0f;
 	vtx.Position.y = 0.0f;
 	vtx.Position.z = 0.0f;
-	vtx.Diffuse = Color(0, 1, 1, 0.6);
+	vtx.Diffuse = Color(0.0f, 1.0f, 1.0f, 0.6f);
 	vtx.Normal = Vector3(0, 0, -1);
 	vtx.TexCoord = Vector2(u[2], v[2]);
 	m_vertices.push_back(vtx);
@@ -49,7 +49,7 @@ void Resource::init() {
 	vtx.Position.x = m_width / 2.0f;
 	vtx.Position.y = 0.0f;
 	vtx.Position.z = 0.0f;
-	vtx.Diffuse = Color(0, 0, 1, 0.6);
+	vtx.Diffuse = Color(0.0f, 0.0f, 1.0f, 0.6f);
 	vtx.Normal = Vector3(0, 0, -1);
 	vtx.TexCoord = Vector2(u[3], v[3]);
 	m_vertices.push_back(vtx);
@@ -89,6 +89,7 @@ void Resource::Spawn(const Vector3& pos,int value, bool enableAttract)
 	m_value = value;
 	m_lifeTime = 0.0f;
 	m_attract = enableAttract;
+	m_velY = 0.0f;
 
 	m_spawnTime = Time::Get().Now();
 }
@@ -112,7 +113,7 @@ void Resource::Attract(const Vector3& playerPos, uint64_t dtMs)
 	m_srt.pos += toPXZ * (SPEED * dt);
 
 	// Y é„Çﬂ
-	constexpr float Y_SPEED = 60.0f;		// í≤êÆóp SPEEDÇÊÇËè¨Ç≥Ç≠éùÇ¬
+	constexpr float Y_SPEED = 60.0f;		// í≤êÆóp
 	const float dyMax = Y_SPEED * dt;
 
 	float dy = toP.y;
@@ -134,11 +135,30 @@ void Resource::update(uint64_t dt)
 {
 	if (!m_alive) return;
 
+	// í«â¡ÅFóéâ∫
+	const float dtSec = dt * 0.001f;
+
+
+	m_velY += GRAVITY * dtSec;
+	if (m_velY < MAX_FALL) m_velY = MAX_FALL;
+
+	m_srt.pos.y += m_velY * dtSec;
+
 	// è‹ñ°ä˙å¿
 	if (Time::Get().Now() - m_spawnTime > RESOURCE_LIFE_TIME)
 	{
 		m_alive = false;
 		return;
+	}
+
+		if (m_field)
+	{
+		const float groundY = m_field->GetHeight2(m_srt.pos);
+		if (m_srt.pos.y < groundY)
+		{
+			m_srt.pos.y = groundY;
+			if (m_velY < 0.0f) m_velY = 0.0f;
+		}
 	}
 
 	// ìﬁóéâÒé˚

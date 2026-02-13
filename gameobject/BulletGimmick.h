@@ -14,7 +14,7 @@ public:
     enum class BulletNo : uint8_t {
         WaterShot = 0, WaterTrap = 1, FireShot = 2, FireTrap = 3, WindShot = 4, WindTrap = 5 };
 
-    struct BulletSpec { float speed, lifeSec, radius; int damage; int mpCost; bool isTrap; float kbH; float kbV; };
+    struct BulletSpec { float speed, lifeSec, radius, late; int damage; int mpCost; bool isTrap; float kbH; float kbV; };
 
     // 見た目取り付け
     struct BulletVisualSpec
@@ -58,18 +58,30 @@ public:
         return kVSpec[i];
     }
 
+	// BulletNoからElement取得：外部用
+    static constexpr Element GetElement(BulletNo no)
+    {
+        return static_cast<Element>(static_cast<uint8_t>(no) / 2u);
+    }
+
+	// BulletNoからBulletModeを取得：外部用
+    static constexpr BulletMode GetMode(BulletNo no)
+    {
+        return static_cast<BulletMode>(static_cast<uint8_t>(no) % 2u);
+    }
+
 private:
 
     uint32_t m_acceptBulletNo = 1;
 
     inline static constexpr BulletSpec kSpec[6] = {
-   //speed life radius dmg mpCost trap   kbH   kbV
-    {5.0f, 2.0f,  60.0f, 1, 0, false,  6.0f,  4.0f},  // WaterShot
-    {0.0f,90.0f, 200.0f, 2, 10, true,  14.0f, 12.0f},  // WaterTrap
-    {8.0f, 3.0f, 20.0f, 1, 1, false,  8.0f,  6.0f},  // FireShot
-    {0.0f, 6.0f,160.0f, 5, 10, true,  18.0f, 10.0f},  // FireTrap
-    {6.0f, 1.8f, 80.0f, 0, 0, false,  10.0f,  10.0f},  // WindShot
-    {0.0f,10.0f,140.0f, 0, 10, true,   0.0f,  0.0f},  // WindTrap
+   //speed life radius late dmg cost trap   kbH   kbV
+    {5.0f, 2.0f,  60.0f, 0.8f, 1, 0, false,  6.0f,  6.0f},  // WaterShot
+    {0.0f,90.0f, 200.0f, 1.0f, 2, 10, true,  14.0f, 12.0f},  // WaterTrap
+    {8.0f, 3.0f, 20.0f, 0.4f, 2, 1, false,  5.0f,  4.0f},  // FireShot
+    {0.0f, 6.0f,160.0f, 1.0f, 5, 10, true,  18.0f, 10.0f},  // FireTrap
+    //{6.0f, 1.8f, 80.0f, 0, 0, false,  10.0f,  10.0f},  // WindShot
+    //{0.0f,10.0f,140.0f, 0, 10, true,   0.0f,  0.0f},  // WindTrap
     };
 
     // 4頂点色
@@ -85,7 +97,7 @@ private:
 
     // FireShot
     { Color(1.0f, 1.0f, 0.0f, 0.6f), Color(1,0.5,0,0.6f), Color(1,0.5,0,0.6f), Color(1,0,0,0.6f),
-    "assets/texture/Circle256.png", false, 10.0f, 0.25f, 1.0f },
+    "assets/texture/Circle256_3.png", false, 10.0f, 0.25f, 1.0f },
 
     // FireTrap
     { Color(1,1,1,0.6f), Color(1,1,1,0.6f), Color(1,0.6f,0.2f,0.6f), Color(1,0.2f,0.1f,0.6f),

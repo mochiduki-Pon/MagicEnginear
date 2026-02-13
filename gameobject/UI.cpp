@@ -5,6 +5,7 @@
 #include "../system/EnemyCounter.h"
 #include <DirectXMath.h>
 #include <string>
+#include <iostream>
 
 namespace
 {
@@ -87,6 +88,7 @@ void UI::Init()
     m_fillR = std::make_unique<CSprite>(260, 22, "assets/texture/effectr.png");
     m_fillB = std::make_unique<CSprite>(260, 22, "assets/texture/effect001.png");
     m_fillW = std::make_unique<CSprite>(260, 22, "assets/texture/effect111.png");
+
     m_shotT = std::make_unique<CSprite>(
         static_cast<int>(256 * 0.5f),
         static_cast<int>(256 * 0.5f),
@@ -98,8 +100,8 @@ void UI::Init()
         "assets/texture/torap.png");
 
     m_shotTsht = std::make_unique<CSprite>(
-        static_cast<int>(256 * 0.5f),
-        static_cast<int>(256 * 0.5f),
+        static_cast<int>(256 * 0.42f),
+        static_cast<int>(256 * 0.42f),
         "assets/texture/shot.png");
 
     m_clearmin = std::make_unique<CSprite>(
@@ -124,6 +126,21 @@ void UI::Init()
         static_cast<int>(700.0f * 0.15f),
         static_cast<int>(200.0f * 0.15f),
         "assets/texture/Stage.png");
+
+    m_syabon = std::make_unique<CSprite>(
+        static_cast<int>(190.0f * 0.2f),
+        static_cast<int>(190.0f * 0.2f),
+        "assets/texture/syabon.png");
+
+    m_fireicon = std::make_unique<CSprite>(
+        static_cast<int>(250.0f * 0.25f),
+        static_cast<int>(100.0f * 0.25f),
+        "assets/texture/fire.png");
+
+    m_hukidashi = std::make_unique<CSprite>(
+        static_cast<int>(256 * 0.3f),
+        static_cast<int>(256 * 0.3f),
+        "assets/texture/SetShotE.png");
 
 	// 数字スプライト
     const std::string DIG_TEX = "assets/texture/num2.png";
@@ -170,13 +187,22 @@ void UI::SetTrapMode(bool isTrap)
     m_isTrapMode = isTrap;
 }
 
+void UI::SetCurrentBulletNo(BulletGimmick::BulletNo no)
+{
+    m_currentNo = no;
+
+    m_state.mode = BulletGimmick::GetMode(no);
+    m_state.element = BulletGimmick::GetElement(no);
+    m_state.spec = BulletGimmick::Spec(no);
+}
+
 void UI::Update(uint64_t dtMs, int hp, int hpMax)
 {
     if (!m_inited) Init();
 
     constexpr float barW = 260.0f;
 
-    // ===== HP =====
+    // HP
     float hp01 = (hpMax > 0) ? (float)hp / (float)hpMax : 0.0f;
     hp01 = std::clamp(hp01, 0.0f, 1.0f);
 
@@ -251,7 +277,7 @@ void UI::Draw()
     if (m_hpplate)
         m_hpplate->Draw(S1, R0, Vector3(baseX + 420.0f, baseY + 140.0f, 0));
 
-    // ===== HPバー =====
+    // HPバー
     const float barX = baseX + 420.0f;
     const float barY = baseY + 145.0f;
     float w = m_hpSmooth;
@@ -265,7 +291,7 @@ void UI::Draw()
 
     const float sxFill = g.w / SRC_W;
 
-    // 影（固定MAX）
+    // 影 MAX固定
     constexpr float SHADOW_EXTRA_W = 10.0f;
     constexpr float SHADOW_EXTRA_H = 10.0f;
 
@@ -277,7 +303,7 @@ void UI::Draw()
         m_fillB->Draw(Vector3(shadowSx, shadowSy, 1), R0, Vector3(g.maxX, g.maxY, 0));
     }
 
-    // 本体（動く）
+    // 本体 可変
     CSprite* fill = (m_hp01 > 0.35f) ? m_fillG.get() : m_fillR.get();
     if (fill)
     {
@@ -294,6 +320,7 @@ void UI::Draw()
     if (m_stage)
         m_stage->Draw(S1, R0, Vector3(STAGE_X, STAGE_Y, 0));
 
+	// ショット・トラップ
     const Vector3 shotPos(faceX - 150.0f, faceY - 60.0f, 0);
 
     if (m_shotT) m_shotT->Draw(S1, R0, shotPos);
@@ -305,7 +332,35 @@ void UI::Draw()
         if (m_shotTsht) m_shotTsht->Draw(S1, R0, shotPos);
     }
 
-    // ===== Enemyゲージ（右上固定・左→右確定版） =====
+    // Element
+    {
+        constexpr float ICON_OX = -217.0f;
+        constexpr float ICON_OY = -30.0f;
+
+        const Vector3 elemPos(faceX + ICON_OX, faceY + ICON_OY, 0.0f);
+        const Vector3 hukiPos = shotPos + Vector3(-68.0f, 30.0f, 0.0f); // + が右
+        if (m_hukidashi)
+            m_hukidashi->Draw(S1, R0, hukiPos);
+
+        switch (m_state.element)
+        {
+        case BulletGimmick::Element::Water:
+            if (m_syabon)
+                m_syabon->Draw(S1, R0, elemPos);
+            break;
+
+        case BulletGimmick::Element::Fire:
+            if (m_fireicon)
+                m_fireicon->Draw(S1, R0, elemPos);
+            break;
+
+        case BulletGimmick::Element::Wind:
+            // 風アイコン作ったらここ
+            break;
+        }
+    }
+
+    // Enemyゲージ右上 固定 左→右
     constexpr float TOP_MX = 80.0f;
     constexpr float TOP_MY = 30.0f;
 
@@ -313,7 +368,7 @@ void UI::Draw()
     constexpr float BAR_H = SRC_H;   // 22
 
     // 右上に置く左端座標を作る
-    const float leftX = SCREEN_W - TOP_MX - W_MAX;          // 左端
+    const float leftX = SCREEN_W - TOP_MX - W_MAX;      // 左端
     const float centerY = TOP_MY + (BAR_H * 0.5f);
 
     // 背景黒

@@ -10,6 +10,7 @@
 #include	"../system/camera.h"
 #include	"../main.h"
 #include	"../system/Time.h"
+#include	"../gameobject/field.h"
 
 class player;
 
@@ -25,6 +26,7 @@ public:
 	void Attract(const Vector3& playerPos, uint64_t dtMs);
 	void AttractToPlayer(uint64_t dtMs);
 	void SetPlayer(player* p) { m_player = p; }
+	void SetField(field* f) { m_field = f; }
 
 	Time::TimePoint m_spawnTime;
 
@@ -66,6 +68,8 @@ private:
 	static constexpr float ATTRACT_R = 200.0f; // 反応距離
 	static constexpr float START_R = 100.0f;  // 実際に吸う距離
 	static constexpr float SPEED = 150.0f;
+	static constexpr float GRAVITY = -180.0f;     // 調整
+	static constexpr float MAX_FALL = -600.0f;    // 調整
 
 	//リソース価値
 	int m_value = 1;
@@ -79,6 +83,8 @@ private:
 	float m_speed = 0.5f;		// 移動速度
 	float m_lifeTime = 0.0f;	// 生成経過時間
 	float m_maxLife = 10.0f;	// 消える時間
+	float m_velY = 0.0f;
+	field* m_field = nullptr;
 
 	// 描画
 	CVertexBuffer<VERTEX_3D>	m_VertexBuffer;				// 頂点バッファ

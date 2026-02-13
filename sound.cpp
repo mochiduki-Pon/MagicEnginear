@@ -65,13 +65,6 @@ void XAudSound::soundInit(){
 	std::random_device rd;
 	m_random = std::make_unique<std::mt19937>(rd());
 
-	//explodeDelay = 2.f;
-
-	//îwåiâπäyÉvÉåÅ[
-	//m_nightLoop = m_ambient[0]->CreateInstance();
-	//m_nightLoop->Play(true);
-
-
 }
 
 void XAudSound::soundBGMPlay(int i) {
@@ -85,10 +78,6 @@ void XAudSound::soundBGMPlay(int i) {
 
 void XAudSound::soundSEPlay(int i) {
 
-	//void updateplayer()->bool updateplayer()soundEffect->Play( volume, pitch, pan );
-	/*volume default is 1
-		pitch ranges from - 1 to + 1, playback defaults to 0 (which is no pitch - shifting)
-		pan - 1 is fully left, +1 is fully right, and 0*/
 	float volume = 1.0f;
 	float pitch = 0.0f;
 		//-0.5f;//é¸îgêî

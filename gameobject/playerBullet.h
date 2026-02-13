@@ -60,13 +60,14 @@ public:
 	void Spawn(const Vector3& pos, const Vector3& dir, BulletGimmick::BulletNo no);
 	void SetActorNo(uint8_t no) { m_actorNo = no; }
 	uint8_t GetActorNo() const { return m_actorNo; }
-	bool IsTrap() const{ return m_spec.isTrap; }
-
-	// 弾当たり判定用
+	bool IsTrap() const{ return m_spec.isTrap; }			//トラップか
 	float GetCollisionRadius() const { return m_collisionRadius; }
 	void SetCollisionRadius(float r) { m_collisionRadius = r; }
+
+	// 弾当たり判定用
 	Vector3 GetColliderCenter() const;
 	float GetExplosionRadius() const;
+	Vector3 GetExplosionCenter() const;
 
 	//デバッグ用
 	float GetLifeTime() const;
@@ -74,11 +75,11 @@ public:
 
 
 	int GetDamage() const { return BulletGimmick::Spec(m_no).damage; }
-	Vector3 GetExplosionCenter() const;
 	void Explode();
 
 private:
 
+	//BulletGimmick
 	BulletGimmick::BulletNo   m_no = BulletGimmick::BulletNo::WaterShot;
 	BulletGimmick::BulletSpec m_spec{};
 	Time::TimePoint m_spawnAt{};   // 生存開始時刻
@@ -116,6 +117,8 @@ private:
 
 	std::vector<VERTEX_3D>		m_vertices;
 	std::vector<uint32_t>		m_indices;
+
+	const char* m_currentTexturePath = nullptr;
 
 	inline Vector3 Lerp(const Vector3& a, const Vector3& b, float t)
 	{

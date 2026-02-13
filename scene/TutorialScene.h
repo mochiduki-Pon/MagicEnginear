@@ -32,6 +32,7 @@
 
 namespace spawnpoints
 {
+	//所持座標
 	constexpr Vector3 SPAWN_ALL[] = {
 		{ -150.0f, 0.0f, 800.0f },	//0
 		{ -50.0f, 10.0f, 800.0f },	//1
@@ -56,6 +57,7 @@ public:
 	virtual ~TutorialScene() {}
 	void SpawnPickup(const Vector3& pos, int count) override;
 
+	//定数
 	static constexpr uint32_t	WALLMAX = 10;
 	static constexpr uint32_t	OBSTACLEMAX = 10;
 	static constexpr uint32_t	ENEMYMAX = 10;
@@ -65,7 +67,7 @@ public:
 	static constexpr uint32_t	RESOURCEMAX = 30;
 	//static constexpr uint32_t SMOKEMAX = 20;
 
-	// コピーコン不可
+	// コピコン不可
 	TutorialScene(const TutorialScene&) = delete;
 
 	/// 代入演算子不可
@@ -78,15 +80,14 @@ public:
 	void dispose() override;
 
 	void debugUICamera();
-	void debugFieldRemake();
-	void debugPlayerInfo();
-
 	void resourceLoader();
 
-	//void SpawnPickup(const Vector3& pos);				// リソースピックアップ
-	tower* gettower() { return m_tower.get(); }			// タワーを取得
-	field* getfield()const { return m_field.get(); }	// フィールドを取得
-	player* getPlayer() { return m_player.get(); }
+	//getter
+	tower* gettower() { return m_tower.get(); }			// タワー
+	field* getfield()const { return m_field.get(); }	// フィールド
+	player* getPlayer() { return m_player.get(); }		// プレイヤー
+
+	//Array
 	const std::array<std::unique_ptr<enemy>, ENEMYMAX>& GetEnemies() const{ return m_enemies; }
 
 	//collision関連
@@ -102,6 +103,8 @@ public:
 
 	//shot関連
 	PlayerBullet* TryReserveBullet();
+
+	//
 	std::unique_ptr<EffectSystem> m_effectExplosion;
 
 private:
@@ -112,6 +115,7 @@ private:
 	UiState m_uiState = UiState::InGame;
 	Stage   m_stage = Stage::Stage1;
 	Time::TimePoint m_stageStartTime;
+	Time::TimePoint m_goFadeStart;
 
 	struct WaveScript
 	{
@@ -120,6 +124,8 @@ private:
 		int      count;			// 数だけ出す
 	};
 
+	//ステージスクリプト
+	//Time/座標/数
 	static constexpr WaveScript STAGE1_SCRIPT[] = {
 	{ 400, 2, 1 },};
 
@@ -145,62 +151,57 @@ private:
 	{ 5000, 4, 1 },
 	{ 5000, 0, 1 }, };
 
-	Time::TimePoint m_goFadeStart;
-
-	bool	m_cleared = false;
+	bool	m_cleared = false;			// フェード円表示
 	bool	m_isGameOver = false;		// ゲームオーバー状態
-	bool m_clearAccepted = false;		// 悪いバッファ対策
+	bool	m_clearAccepted = false;		// バッファ対策
 	uint64_t m_clearTimerMs = 0;
 
+	//ステージスクリプト関連
 	const WaveScript* m_script = STAGE1_SCRIPT;
 	size_t m_scriptCount = std::size(STAGE1_SCRIPT);
 	size_t   m_scriptIndex = 0; // 次に処理する行
 	uint64_t m_elapsedMs = 0;   // 経過時間
 	int m_nextSpawnPoint = 0;
-	bool m_gameOverFade = false;
 	float m_goCircleScale = 0.0f;
 	int m_stageIndex = 1;
 
 	void Clear();
 	void SetupStage(Stage stage);
 	void StartNextWave();
-	int GetStageIndex() const;		// 現在のステージ番号取得
+	int  GetStageIndex() const;		// 現在のステージ番号取得
 
 	//soundflag
 	bool m_audioInited = false;
 
 	//sceneで使うもの
-	std::unique_ptr<Camera> m_camera;		// このシーンで使用するカメラ
+	std::unique_ptr<Camera> m_camera;		// カメラ
 	std::unique_ptr<field> m_field;			// フィールド
-	//std::unique_ptr<aim> m_aim;			// エイムbillboard
 	std::unique_ptr<player> m_player;		// プレイヤ
 	std::unique_ptr<tower> m_tower;			// タワー
 	std::unique_ptr<BlobShadow>	m_blobshadow;// 丸影
-	std::unique_ptr<CSprite> m_circle;
+	std::unique_ptr<CSprite> m_circle;		// フェード円
+	std::unique_ptr<DirectWrite> m_directwrite;// 文字
 
 	//配列群z
 	std::array<std::unique_ptr<enemy>, ENEMYMAX>	m_enemies;						// Enemy達
 	std::array<std::unique_ptr<PlayerBullet>, PLAYERBULLETMAX>	m_playerBullets;	// PlayerBullet
-	//std::vector<std::unique_ptr<BulletGimmick>> m_gimmicks;								// 中身ナンバ
-	//std::array<std::unique_ptr<Effect>, SMOKEMAX>	m_effect;
 	std::array<std::unique_ptr<wall>, WALLMAX>	m_walls;							// 壁群
 	std::array<std::unique_ptr<obstacle>, OBSTACLEMAX>	m_obstacles;				// 障害物
 	std::array<std::unique_ptr<Resource>, RESOURCEMAX>	m_resource;
+
 
 	//maouse関連
 	Vector3 m_pickuppos{ 0,0,0 };
 	Vector3 m_farpoint{};
 	Vector3 m_nearpoint{};
 
-
-	std::unique_ptr<DirectWrite> m_directwrite;	// DirectWrite
 	FontData	m_fontdata;						// フォントデータ
 	std::vector<SRT>	m_nodes{};				// ノード位置
 
 	Vector3 m_camPos;
 	bool    m_camInit = false;
 
-	//tutorialフラグっ！
+	// 初回フラグ
 	bool m_givenTutorialMp = false;
 
 	// collision関連
@@ -212,12 +213,15 @@ private:
 		return false;
 	}
 
+	//当たり判定
+	// タワー
 	bool ResolveEnemyTowerCollision(enemy& e, const tower& t);
 	static bool CollisionSphereCylinder_Push(
 		const Call::Collision::BoundingSphere& sphere,
 		const Call::Collision::BoundingCylinder& cylinder,
 		Vector3& outPush);
 
+	// リソース
 	void SpawnResource(const Vector3& pos);		//resourceスポーン
 
 	// Bullet関連
@@ -236,7 +240,6 @@ private:
 	int GetAliveBulletCount() const;
 	int GetAliveTrapCount() const;
 
-	float m_fallDarkAlpha = 0.0f;
 };
 
 REGISTER_CLASS(TutorialScene)

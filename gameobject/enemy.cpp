@@ -116,7 +116,7 @@ void enemy::SeparateFromOthers()
 		// 重なり量（近いほど大きい）
 		const float overlap = (SEP_R - dist);
 
-		// 重なりに比例して押す（ガクッとしにくい）
+		// 重なりに比例して押す
 		push += n * (overlap * K);
 	}
 
@@ -533,6 +533,7 @@ void enemy::update(uint64_t dt)
 
 		break;
 	}
+
 	case Status::Dead:
 	{
 		// 重力

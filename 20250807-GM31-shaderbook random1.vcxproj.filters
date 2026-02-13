@@ -243,10 +243,7 @@
     <ClCompile Include="gameobject\resource.cpp">
       <Filter>ソース ファイル\gameobject</Filter>
     </ClCompile>
-    <ClCompile Include="gameobject\BaceEnemy.cpp">
-      <Filter>ソース ファイル\gameobject</Filter>
-    </ClCompile>
-    <ClCompile Include="gameobject\ghost.cpp">
+    <ClCompile Include="gameobject\boxcreate.cpp">
       <Filter>ソース ファイル\gameobject</Filter>
     </ClCompile>
   </ItemGroup>
@@ -536,11 +533,11 @@
     <ClInclude Include="system\WindowCounter.h">
       <Filter>ソース ファイル\system</Filter>
     </ClInclude>
-    <ClInclude Include="gameobject\BaceEnemy.h">
-      <Filter>ソース ファイル\gameobject</Filter>
-    </ClInclude>
     <ClInclude Include="Trap.h">
       <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="gameobject\boxcreate.h">
+      <Filter>ソース ファイル\gameobject</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

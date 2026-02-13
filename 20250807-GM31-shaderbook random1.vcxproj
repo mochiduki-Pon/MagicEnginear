@@ -108,7 +108,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <WarningLevel>Level4</WarningLevel>
+      <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -140,11 +140,10 @@
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="game.cpp" />
     <ClCompile Include="gameobject\aim.cpp" />
-    <ClCompile Include="gameobject\BaceEnemy.cpp" />
+    <ClCompile Include="gameobject\boxcreate.cpp" />
     <ClCompile Include="gameobject\effectsystem.cpp" />
     <ClCompile Include="gameobject\enemy.cpp" />
     <ClCompile Include="gameobject\field.cpp" />
-    <ClCompile Include="gameobject\ghost.cpp" />
     <ClCompile Include="gameobject\obstacle.cpp" />
     <ClCompile Include="gameobject\player.cpp" />
     <ClCompile Include="gameobject\playerBullet.cpp" />
@@ -215,7 +214,7 @@
     <ClInclude Include="fpscontrol.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="gameobject\aim.h" />
-    <ClInclude Include="gameobject\BaceEnemy.h" />
+    <ClInclude Include="gameobject\boxcreate.h" />
     <ClInclude Include="gameobject\BulletGimmick.h" />
     <ClInclude Include="gameobject\effectsystem.h" />
     <ClInclude Include="gameobject\enemy.h" />
