@@ -281,6 +281,7 @@ void TutorialScene::CollisionStep()
 			for (auto& e : m_enemies)
 			{
 				if (!e || !e->IsAlive()) continue;
+				if (!e->ShouldCollideWith(pb->GetNo())) continue;// Ghostの場合3以外場合除外
 
 				// Trap
 				if (pb->IsTrap())
@@ -309,9 +310,8 @@ void TutorialScene::CollisionStep()
 				if (!BulletEnemyCollision(*pb, *e))
 					continue;
 
-				//e->m_lastHitBulletNo = pb->GetNumber();
 				e->m_hitFromExplosion = false;
-				e->Damage(pb->GetDamage());
+				e->OnHitBullet(pb->GetNo(), pb->GetDamage());
 				pb->Kill();
 				break;
 			}
@@ -423,6 +423,10 @@ void TutorialScene::SetupStage(Stage stage)
 	case Stage::Stage4:
 		m_script = STAGE4_SCRIPT;
 		m_scriptCount = std::size(STAGE4_SCRIPT);
+		break;
+	case Stage::Stage5:
+		m_script = STAGE5_SCRIPT;
+		m_scriptCount = std::size(STAGE5_SCRIPT);
 		break;
 	}
 
@@ -632,6 +636,7 @@ void TutorialScene::update(uint64_t deltatime)
 	const uint64_t spawnDt = (deltatime > 50) ? 50 : deltatime;
 
 	for (auto& pb : m_playerBullets) {
+
 		if (pb) {
 			pb->update(deltatime);
 		}
@@ -663,7 +668,7 @@ void TutorialScene::update(uint64_t deltatime)
 		e->setSRT(srt);
 	}
 
-
+	// ステージスクリプト処理
 	uint64_t elapsedMs =
 		Time::ElapsedMs(m_stageStartTime);
 
@@ -679,6 +684,8 @@ void TutorialScene::update(uint64_t deltatime)
 			{
 				if (e && !e->IsAlive())
 				{
+					// エネミータイプをセット
+					e->SetEnemyState(s.state);
 					e->Spawn(pos);
 					break;
 				}

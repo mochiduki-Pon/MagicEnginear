@@ -10,21 +10,35 @@
 #include	"../system/EnemyCounter.h"
 #include	"../gameobject/resource.h"
 
+namespace
+{
+	constexpr Vector3 SCALE_MOUSE(0.6f, 0.6f, 0.6f);
+	constexpr Vector3 SCALE_GHOST(0.4f, 0.4f, 0.4f);
+	constexpr int HP_MOUSE = 3;
+	constexpr int HP_GHOST = 5;
+	constexpr int BARRIER_HP_GHOST = 1;
+}
+
 //控え選手状態
 void enemy::init()
 {
-	//描画リソース
-	//m_mesh = MeshManager::getMesh<CStaticMesh>("Ghost.fbx");
+	// Normal
 	m_meshrenderer = MeshManager::getRenderer<CStaticMeshRenderer>("256Mouse.fbx");
-	m_shader = MeshManager::getShader<CShader>("lightshader");
+	// Ghost
+	m_ghostMesh = MeshManager::getMesh<CStaticMesh>("Ghost.fbx");
+	m_ghostMeshRenderer = MeshManager::getRenderer<CStaticMeshRenderer>("Ghost.fbx");
 
-	m_srt.scale = Vector3(0.7f, 0.7f, 0.7f);
+	m_shader = MeshManager::getShader<CShader>("lightshader");
 
 	//ID登録
 	m_id = s_nextId++;
 	m_sts = Status::Dead;
 	m_dead = true;
 	m_spawned = false;
+
+	// デフォルト
+	m_enemyState = EnemyState::Normal;
+	m_srt.scale = SCALE_MOUSE;
 }
 
 //スポーン処理
@@ -33,6 +47,23 @@ void enemy::Spawn(const Vector3& pos)
 	// WaveActive
 	if (!EnemyCounter::GetInstance().IsWaveActive())
 		return;
+
+	// stateに応じた見た目/サイズ/HPをセット
+	m_srt.scale = IsGhost() ? SCALE_GHOST : SCALE_MOUSE;
+	m_maxHp = IsGhost() ? HP_GHOST : HP_MOUSE;
+
+	// バリア初期化
+	if (IsGhost())
+	{
+		m_hasBarrier = true;
+		m_barrierHp = BARRIER_HP_GHOST;
+	}
+
+	else
+	{
+		m_hasBarrier = false;
+		m_barrierHp = 0;
+	}
 
 	m_spawned = true; // 出場決定
 	m_sts = Status::Alive;
@@ -56,10 +87,11 @@ void enemy::Spawn(const Vector3& pos)
 	setSRT(srt);
 
 	std::cout << "[SPAWN] id=" << m_id
-		<< " rot=("
-		<< m_srt.rot.x << ", "
-		<< m_srt.rot.y << ", "
-		<< m_srt.rot.z << ")"
+		<< " state=" << (IsGhost() ? "Ghost" : "Normal")
+		<< " scale=("
+		<< m_srt.scale.x << ", "
+		<< m_srt.scale.y << ", "
+		<< m_srt.scale.z << ")"
 		<< std::endl;
 
 	EnemyCounter::GetInstance().RegisterEnemy(m_id);
@@ -134,6 +166,10 @@ void enemy::SeparateFromOthers()
 // 壁とのヒットチェック
 bool enemy::wallshitcheck(std::vector<wall::WallCollision>& hitwalls)
 {
+	// Ghost は壁をすり抜ける
+	if (IsGhost())
+		return false;
+
     bool hitflag = false;
 
     const Vector3 nextpos = m_srt.pos + m_move;
@@ -210,6 +246,14 @@ bool enemy::wallshitcheck(std::vector<wall::WallCollision>& hitwalls)
 // 止める！調整用
 void enemy::ApplyWallAndMove()
 {
+	// Ghost壁処理なし
+	if (IsGhost())
+	{
+		m_srt.pos += m_move;
+		m_move += -m_move * RATE_MOVE_MODEL;
+		return;
+	}
+
     std::vector<wall::WallCollision> hitwalls;
     const bool hit = wallshitcheck(hitwalls);
 
@@ -242,6 +286,15 @@ void enemy::ApplyWallAndMove()
     m_move += -m_move * (RATE_MOVE_MODEL * 0.2f);
 }
 
+// Ghostに対して指定の弾と当たり判定部分
+bool enemy::ShouldCollideWith(BulletGimmick::BulletNo no) const
+{
+	if (!IsGhost()) return true;
+
+	// 3以外は当たり判定を取らない
+	return no == BulletGimmick::BulletNo::FireShot;
+}
+
 //外部引き渡しラップ（被弾入口）
 void enemy::Damage(int amount)
 {
@@ -261,6 +314,38 @@ void enemy::Damage(int amount)
 		m_pendingKill = true;
 	}
 
+}
+
+// 幽霊の透過状態
+void enemy::OnHitBullet(BulletGimmick::BulletNo no, int damage)
+{
+	if (m_sts == Status::Dead) return;
+
+	SetLastHitBulletNo(no);
+
+	const auto elem = BulletGimmick::GetElement(no);
+
+	// バリア透過
+	if (HasBarrier())
+	{
+		// Fireだけバリアを削れる（No3onenable）
+		if (elem == BulletGimmick::Element::Fire)
+		{
+			// 1ヒットで1削る
+			--m_barrierHp;
+			if (m_barrierHp < 0) m_barrierHp = 0;
+
+			// バリアが残っている場合透過
+			if (HasBarrier())
+				return;
+		}
+
+		// Fire以外は完全透過
+		return;
+	}
+
+	// バリア無し：通常ダメージ
+	Damage(damage);
 }
 
 //被弾処理
@@ -294,6 +379,7 @@ void enemy::Kill()
 	if (m_dead) return;
 	m_dead = true;
 
+	// 爆発死のときはドロップ数増やす
 	if (m_deathCause == DeathCause::Normal || m_deathCause == DeathCause::Explosion)
 	{
 		int drop = BaseDropRand();
@@ -410,10 +496,9 @@ void enemy::HitBullet(const BulletGimmick::BulletSpec& sp, const Vector3& fromPo
 	m_hitFromExplosion = false;
 	m_kbH = sp.kbH;
 	m_kbV = sp.kbV;
-	//m_hitFromPos = fromPos; // dir計算に使うなら
 	m_damageImpulseDone = false;
 	m_reaction = Reaction::Damage;
-	m_damageRemainMs = DAMAGE_REMAIN_MS; // 既存の値
+	m_damageRemainMs = DAMAGE_REMAIN_MS;
 }
 
 void enemy::update(uint64_t dt)
@@ -619,6 +704,10 @@ void enemy::draw(uint64_t dt)
 
 	m_shader->SetGPU();
 
+	// stateで切替
+	CStaticMeshRenderer* renderer = IsGhost() ? m_ghostMeshRenderer : m_meshrenderer;
+	if (!renderer) return;
+
 	// 被弾フラッシュ：残り時間の比率で明るさを減衰
 	if (m_reaction == Reaction::Damage && m_damageRemainMs > 0)
 	{
@@ -626,17 +715,46 @@ void enemy::draw(uint64_t dt)
 			static_cast<float>(m_damageRemainMs) / static_cast<float>(DAMAGE_FLASH_MS); // 1→0
 
 		// 1.0～HIT_FLASH_MAX_MULTIPLIER の範囲で白く増光
+		//ねずみ
 		const float flash =
 			1.0f + (HIT_FLASH_MAX_MULTIPLIER - 1.0f) * remainRatio;
 
-		m_meshrenderer->Draw(Color(flash, flash, flash, 1.0f));
+		const float a = IsGhost() ? 0.55f : 1.0f;
+
+		// Ghost
+		if (IsGhost())
+		{
+			// Ghost：黒フラッシュ
+			static constexpr float BLACK_FLASH_MIN = 0.15f;
+			const float shade =
+				BLACK_FLASH_MIN + (1.0f - BLACK_FLASH_MIN) * (1.0f - remainRatio); // 0.15→1.0
+
+			renderer->Draw(Color(shade, shade, shade, a));
+		}
+		else
+		{
+			// Normal：白フラッシュ（現状維持）
+			const float flash =
+				1.0f + (HIT_FLASH_MAX_MULTIPLIER - 1.0f) * remainRatio;
+
+			renderer->Draw(Color(flash, flash, flash, a));
+		}
 		return;
 	}
 	else
 	{
-		m_meshrenderer->Draw();
-		/*Color DiffuseColor = Color(1.0f, 0.0f, 0.0f, 0.4f);
-		m_staticmeshrenderer->Draw(DiffuseColor);*/
+		// 通常描画
+		if (IsGhost())
+		{
+			if (HasBarrier())
+				renderer->Draw(Color(1.0f, 1.0f, 1.0f, 0.55f)); // バリアあり
+			else
+				renderer->Draw(Color(1.0f, 1.0f, 1.0f, 1.0f)); // バリアなし
+		}
+		else
+		{
+			renderer->Draw();
+		}
 	}
 }
 

@@ -110,7 +110,7 @@ public:
 private:
 
 	//waveシナリオ
-	enum class Stage { Stage1,	Stage2, Stage3, Stage4, Count};
+	enum class Stage { Stage1,	Stage2, Stage3, Stage4, Stage5, Count};
 	enum class UiState : uint8_t { InGame, Clear };
 	UiState m_uiState = UiState::InGame;
 	Stage   m_stage = Stage::Stage1;
@@ -122,34 +122,38 @@ private:
 		uint64_t timeMs;		// この時刻になったら
 		int      pointIndex;	// この番号に
 		int      count;			// 数だけ出す
+		enemy::EnemyState state;// type
 	};
 
 	//ステージスクリプト
 	//Time/座標/数
 	static constexpr WaveScript STAGE1_SCRIPT[] = {
-	{ 400, 2, 1 },};
+	{ 400, 2, 1, enemy::EnemyState::Normal},};
 
 	static constexpr WaveScript STAGE2_SCRIPT[] = {
-	{ 400, 2, 1 },
-	{ 2000, 1, 1 },
-	{ 2000, 3, 1 },
-	{ 4000, 2, 1 }, };
+	{ 400, 2, 1, enemy::EnemyState::Normal},
+	{ 2000, 1, 1, enemy::EnemyState::Normal},
+	{ 2000, 3, 1, enemy::EnemyState::Normal},
+	{ 4000, 2, 1, enemy::EnemyState::Normal}, };
 
 	static constexpr WaveScript STAGE3_SCRIPT[] = {
-	{ 400, 1, 1 },
-	{ 400, 3, 1 },
-	{ 6000, 2, 1 },
-	{ 12000, 1, 1 },
-	{ 12000, 2, 1 },
-	{ 12000, 3, 1 },};
+	{ 400, 1, 1, enemy::EnemyState::Normal},
+	{ 400, 3, 1, enemy::EnemyState::Normal},
+	{ 6000, 2, 1, enemy::EnemyState::Normal},
+	{ 12000, 1, 1, enemy::EnemyState::Normal},
+	{ 12000, 2, 1, enemy::EnemyState::Normal},
+	{ 12000, 3, 1, enemy::EnemyState::Normal},};
 
 	static constexpr WaveScript STAGE4_SCRIPT[] = {
-	{ 400, 2, 1 },
-	{ 2000, 1, 1 },
-	{ 2000, 2, 1 },
-	{ 2000, 3, 1 },
-	{ 5000, 4, 1 },
-	{ 5000, 0, 1 }, };
+	{ 400, 2, 1, enemy::EnemyState::Normal},
+	{ 2000, 1, 1, enemy::EnemyState::Normal},
+	{ 2000, 2, 1, enemy::EnemyState::Normal},
+	{ 2000, 3, 1, enemy::EnemyState::Normal},
+	{ 5000, 4, 1, enemy::EnemyState::Normal},
+	{ 5000, 0, 1, enemy::EnemyState::Normal}, };
+
+	static constexpr WaveScript STAGE5_SCRIPT[] = {
+	{ 400, 2, 1, enemy::EnemyState::Ghost} };
 
 	bool	m_cleared = false;			// フェード円表示
 	bool	m_isGameOver = false;		// ゲームオーバー状態

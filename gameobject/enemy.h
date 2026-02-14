@@ -40,20 +40,30 @@ public:
 
 	Time::TimePoint m_nextTowerHit = Time::Clock::time_point{};
 
-	enum class Status : uint8_t { Alive, Dead };
-	enum class Grande : uint8_t { Graund, Air };
+	enum class Status : uint8_t { Alive, Dead };						// 稼働中か
+	enum class Grande : uint8_t { Graund, Air };						// どこにいるか
 	//enum class EnemyType : uint8_t { Normal, Fast, Tank };
-	enum class Reaction : uint8_t { None, Stun, Knockback, Damage };
+	enum class Reaction : uint8_t { None, Stun, Knockback, Damage };	// リアクション
+	enum class EnemyState : uint8_t { Normal, Ghost };					// type
 
 	// ▼状態▼
 	Status GetStatus() const { return m_sts; }
 	Reaction GetReAct()const { return m_reaction; }
 	bool IsAlive() const { return m_sts == Status::Alive; }
 
+	// 追加：Ghost切替API
+	void SetEnemyState(EnemyState s) { m_enemyState = s; }
+	EnemyState GetEnemyState() const { return m_enemyState; }
+	bool IsGhost() const { return m_enemyState == EnemyState::Ghost; }
+	// バリア状態描画用
+	bool HasBarrier() const { return m_hasBarrier && m_barrierHp > 0; }
+	int  GetBarrierHp() const { return m_barrierHp; }
+
 	// ▼外部呼び出し▼
 	void Kill();				//kill
 	void Damage(int amount);
 	void SetHitFromExplosion(bool v) { m_hitFromExplosion = v; }
+	bool ShouldCollideWith(BulletGimmick::BulletNo no) const;			// Ghostに対して指定の弾と当たり判定するか
 	//void ForceInactiveState();//遺体掃除
 
 	// スポーン管理用
@@ -68,6 +78,8 @@ public:
 	void Spawn(const Vector3& pos);
 	//void SetHitKnock(float h, float v) { m_hitKbH = h; m_hitKbV = v; }
 	bool m_hitFromExplosion = false;
+
+	void OnHitBullet(BulletGimmick::BulletNo no, int damage);
 
 	bool wallshitcheck(std::vector<wall::WallCollision>& hitwalls);	// 壁とのヒットチェック
 	void ApplyWallAndMove();
@@ -85,7 +97,8 @@ private:
 
 	enum class DeathCause : uint8_t { Normal, Explosion, Fall };
 
-	Status m_sts = Status::Alive;;
+	Status m_sts = Status::Alive;
+	EnemyState m_enemyState = EnemyState::Normal;
 	Reaction m_reaction = Reaction::None;
 	DeathCause m_deathCause = DeathCause::Normal;
 	BulletGimmick::BulletNo m_lastHitBulletNo = BulletGimmick::BulletNo::WaterShot;
@@ -129,6 +142,8 @@ private:
 	bool m_damageImpulseDone = false;
 	bool m_pendingKill = false;			//Kill確定
 	bool m_landedOnce = false;
+	bool m_hasBarrier = false;			// バリアの有無
+	int  m_barrierHp = 0;				// バリアHP
 	float m_kbH = 0.0f;		//ノックバックデフォ値水平
 	float m_kbV = 0.0f;		//ノックバックデフォ値垂直
 	int m_boostFrames = 0;
@@ -154,6 +169,9 @@ private:
 	uint64_t m_deadRemainMs = 0;			// 死体残留時間
 	CStaticMesh* m_mesh{};
 	CStaticMeshRenderer* m_meshrenderer{};
+	CStaticMesh* m_ghostMesh{};                  // 追加
+	CStaticMeshRenderer* m_ghostMeshRenderer{};  // 追加
+
 	CShader* m_shader{};
 	CStaticMeshRenderer* m_staticmeshrenderer{};
 	CShader* m_staticmeshshader{};

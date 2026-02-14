@@ -78,7 +78,7 @@ private:
    //speed life radius late dmg cost trap   kbH   kbV
     {5.0f, 2.0f,  60.0f, 0.8f, 1, 0, false,  6.0f,  6.0f},  // WaterShot
     {0.0f,90.0f, 200.0f, 1.0f, 2, 10, true,  14.0f, 12.0f},  // WaterTrap
-    {8.0f, 3.0f, 20.0f, 0.4f, 2, 1, false,  5.0f,  4.0f},  // FireShot
+    {8.0f, 3.0f, 20.0f, 0.4f, 1, 1, false,  5.0f,  4.0f},  // FireShot
     {0.0f, 6.0f,160.0f, 1.0f, 5, 10, true,  18.0f, 10.0f},  // FireTrap
     //{6.0f, 1.8f, 80.0f, 0, 0, false,  10.0f,  10.0f},  // WindShot
     //{0.0f,10.0f,140.0f, 0, 10, true,   0.0f,  0.0f},  // WindTrap
