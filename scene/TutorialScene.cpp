@@ -16,6 +16,9 @@
 #include "../sound.h"
 #include "../gameobject/resource.h"
 #include "../gameobject/boxcreate.h"
+#include <xinput.h>
+#include <cstring>
+#pragma comment(lib, "xinput.lib")
 
 namespace {
 
@@ -45,6 +48,33 @@ namespace {
 	}
 
 	constexpr float NO_SUPPORT_Y = -1.0e9f;
+
+	// Xゲームパットのトリガー検出
+	inline bool PadTrigger()
+	{
+		static bool s_prevX = false;
+		static bool s_prevB = false;
+
+		XINPUT_STATE st{};
+		std::memset(&st, 0, sizeof(st));
+		if (XInputGetState(0, &st) != ERROR_SUCCESS)
+		{
+			s_prevX = false;
+			s_prevB = false;
+			return false;
+		}
+
+		const bool nowX = (st.Gamepad.wButtons & XINPUT_GAMEPAD_X) != 0;
+		const bool nowB = (st.Gamepad.wButtons & XINPUT_GAMEPAD_B) != 0;
+
+		const bool trgX = (nowX && !s_prevX);
+		const bool trgB = (nowB && !s_prevB);
+
+		s_prevX = nowX;
+		s_prevB = nowB;
+
+		return trgX || trgB;
+	}
 
 }
 
@@ -536,7 +566,6 @@ void TutorialScene::GameOver() {
 
 void TutorialScene::update(uint64_t deltatime)
 {
-
 	m_camera->GetViewMatrix();
 	//m_camera->Draw();
 	m_player->update(deltatime);
@@ -735,7 +764,11 @@ void TutorialScene::update(uint64_t deltatime)
 		}
 
 		const bool accept = (m_clearTimerMs > 500);
-		if (accept && CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_RETURN))
+
+		// Enter or PadX or PadBで次へ
+		const bool nextTrig = PadTrigger();
+
+		if (accept && nextTrig)
 		{
 			m_clearAccepted = true;
 

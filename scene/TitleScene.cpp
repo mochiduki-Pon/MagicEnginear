@@ -5,6 +5,63 @@
 #include "../scene/TutorialScene.h"
 #include "../sound.h"
 
+#include <algorithm>
+#include <cmath>
+
+// XInput
+#include <xinput.h>
+#pragma comment(lib, "xinput.lib")
+
+namespace
+{
+    struct XPadNav
+    {
+        bool connected{};
+        bool upTrg{};
+        bool downTrg{};
+        bool aTrg{};
+    };
+
+    inline XPadNav ReadTitleXInput()
+    {
+        XPadNav o{};
+
+        XINPUT_STATE st{};
+        const DWORD r = XInputGetState(0, &st);
+        if (r != ERROR_SUCCESS)
+            return o;
+
+        o.connected = true;
+
+        static bool prevUp = false;
+        static bool prevDown = false;
+        static bool prevA = false;
+
+        const auto& gp = st.Gamepad;
+
+        constexpr SHORT STICK_DZ = 8000;
+
+        const bool upNow =
+            (gp.wButtons & XINPUT_GAMEPAD_DPAD_UP) != 0 ||
+            (gp.sThumbLY > +STICK_DZ);
+
+        const bool downNow =
+            (gp.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0 ||
+            (gp.sThumbLY < -STICK_DZ);
+
+        const bool aNow = (gp.wButtons & XINPUT_GAMEPAD_A) != 0;
+
+        o.upTrg = (upNow && !prevUp);
+        o.downTrg = (downNow && !prevDown);
+        o.aTrg = (aNow && !prevA);
+
+        prevUp = upNow;
+        prevDown = downNow;
+        prevA = aNow;
+
+        return o;
+    }
+}
 
 TitleScene::TitleScene()
 {
@@ -87,6 +144,7 @@ void TitleScene::DrawMenuText(const char* text, float cx, float rowCY)
         false
     );
 }
+
 void TitleScene::update(uint64_t)
 {
     static constexpr float IN_FADE_MS = 800.0f;
@@ -115,29 +173,39 @@ void TitleScene::update(uint64_t)
         if (Time::ElapsedMs(m_decideStart, now) > DECIDE_WAIT_MS)
         {
             if (m_select == 0)
-            {
                 SceneManager::SetCurrentScene("TutorialScene");
-            }
             else
-            {
-                // END
                 PostQuitMessage(0);
-            }
         }
         return;
     }
 
-    if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_W)) {
+    // --- XInputで操作確認（Title用） ---
+    const auto pad = ReadTitleXInput();
+
+    if (m_cursor)
+        m_cursor->SetColor(pad.connected ? Color(1, 1, 1, 1) : Color(0.4f, 0.4f, 0.4f, 1));
+
+    // --- Keyboard ---
+    const bool keyUpTrg = CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_W);
+    const bool keyDownTrg = CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_S);
+    const bool keyDecideTrg =
+        CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_RETURN) ||
+        CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_SPACE);
+
+    if (pad.upTrg || keyUpTrg)
+    {
         m_select--;
         GetXAud()->soundSEPlay((int)SoundSEAssets::Search);
     }
-    if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_S)) {
+    if (pad.downTrg || keyDownTrg)
+    {
         m_select++;
         GetXAud()->soundSEPlay((int)SoundSEAssets::Search);
     }
     m_select = std::clamp(m_select, 0, 1);
 
-    if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_RETURN))
+    if (pad.aTrg || keyDecideTrg)
     {
         GetXAud()->soundSEPlay((int)SoundSEAssets::SeAccept);
         XAudSound::GetInstance()->soundBGMStop();

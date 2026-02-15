@@ -7,6 +7,85 @@
 #include "../sound.h"
 #include <iostream>
 #include "../gameobject/UI.h"
+#include <xinput.h>
+#include <algorithm>
+#include <cmath>
+#include <cstring>
+#pragma comment(lib, "xinput.lib")
+
+namespace
+{
+    inline float NormStick(SHORT v)
+    {
+        float f = (v < 0) ? (float)v / 32768.0f : (float)v / 32767.0f;
+        return std::clamp(f, -1.0f, 1.0f);
+    }
+
+    inline void RadialDeadZone(float& x, float& y, float dz)
+    {
+        const float len2 = x * x + y * y;
+        if (len2 < dz * dz) { x = 0.0f; y = 0.0f; return; }
+
+        const float len = std::sqrt(len2);
+        if (len <= 1e-6f) { x = 0.0f; y = 0.0f; return; }
+
+        const float s = std::clamp((len - dz) / (1.0f - dz), 0.0f, 1.0f);
+        x = (x / len) * s;
+        y = (y / len) * s;
+    }
+
+    struct PadState
+    {
+        bool connected{};
+        float lx{};   // -1..1
+        float ly{};   // -1..1 (up positive)
+        bool a{};     // hold
+        bool aTrg{};  // trigger
+        bool upTrg{};
+        bool downTrg{};
+    };
+
+    inline PadState ReadPad()
+    {
+        PadState p{};
+
+        XINPUT_STATE st{};
+        std::memset(&st, 0, sizeof(st));
+        if (XInputGetState(0, &st) != ERROR_SUCCESS)
+            return p;
+
+        p.connected = true;
+
+        p.lx = NormStick(st.Gamepad.sThumbLX);
+        p.ly = NormStick(st.Gamepad.sThumbLY);
+        RadialDeadZone(p.lx, p.ly, 0.25f);
+
+        const bool nowA = (st.Gamepad.wButtons & XINPUT_GAMEPAD_A) != 0;
+
+        // 簡易トリガ（シーン内 static で保持）
+        static bool prevA = false;
+        p.a = nowA;
+        p.aTrg = (nowA && !prevA);
+        prevA = nowA;
+
+        // スティック上下を「押した瞬間」扱いにしてメニュー移動へ変換
+        // ※アナログのチャタリング防止に、しきい値＋エッジ検出
+        constexpr float TH = 0.60f;
+        const bool nowUp = (p.ly >= TH);
+        const bool nowDown = (p.ly <= -TH);
+
+        static bool prevUp = false;
+        static bool prevDown = false;
+
+        p.upTrg = (nowUp && !prevUp);
+        p.downTrg = (nowDown && !prevDown);
+
+        prevUp = nowUp;
+        prevDown = nowDown;
+
+        return p;
+    }
+}
 
 GameOverScene::GameOverScene() {}
 
@@ -87,7 +166,7 @@ void GameOverScene::DrawMenuText(const char* text, float cx, float rowCY)
 void GameOverScene::update(uint64_t)
 {
     static constexpr float FADE_MS = 800.0f; // フェード時間
-	static constexpr float START_SCALE = 8.0f; // 円の最大拡大率
+    static constexpr float START_SCALE = 8.0f; // 円の最大拡大率
 
     if (m_enterFade)
     {
@@ -125,13 +204,20 @@ void GameOverScene::update(uint64_t)
         return;
     }
 
-    // 未決定：メニュー操作
-    if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_W)) m_select--;
-    if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_S)) m_select++;
+    // パッド入力（未決定中のみ）
+    const auto pad = ReadPad();
+
+    // 未決定：メニュー操作（キーボード + スティック）
+    if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_W) || (pad.connected && pad.upTrg)) m_select--;
+    if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_S) || (pad.connected && pad.downTrg)) m_select++;
 
     m_select = std::clamp(m_select, 0, 1);
 
-    if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_RETURN))
+    const bool decide =
+        CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_RETURN) ||
+        (pad.connected && pad.aTrg);
+
+    if (decide)
     {
         // ここでリスタ
         EnemyCounter::GetInstance().ResetWave();

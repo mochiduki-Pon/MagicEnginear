@@ -7,6 +7,167 @@
 #include	"field.h"
 #include	"player.h"
 
+#include <xinput.h>
+#pragma comment(lib, "xinput.lib")
+#include <algorithm>
+#include <cmath>
+#include <cstring> // std::memset
+
+namespace
+{
+	struct PadMove
+	{
+		bool connected;
+		float x; // -1..1
+		float y; // -1..1 (up positive)
+		PadMove() : connected(false), x(0.0f), y(0.0f) {}
+	};
+
+	struct PadBtnNow
+	{
+		bool connected{};
+		float rt{};  // 0..1
+		bool a{};
+		bool rb{};
+		bool x{};
+		bool y{};
+	};
+
+	struct PadBtnTrg
+	{
+		bool a{};
+		bool rb{};
+		bool rt{};
+		bool x{};
+		bool y{};
+	};
+
+	inline float NormStick(SHORT v)
+	{
+		float f = (v < 0) ? (float)v / 32768.0f : (float)v / 32767.0f;
+		return std::clamp(f, -1.0f, 1.0f);
+	}
+
+	inline void RadialDeadZone(float& x, float& y, float dz)
+	{
+		const float len2 = x * x + y * y;
+		if (len2 < dz * dz) { x = 0.0f; y = 0.0f; return; }
+
+		const float len = std::sqrt(len2);
+		const float s = std::clamp((len - dz) / (1.0f - dz), 0.0f, 1.0f);
+
+		x = (x / len) * s;
+		y = (y / len) * s;
+	}
+
+	inline PadMove ReadPadMove()
+	{
+		PadMove p;
+
+		XINPUT_STATE st{};
+		std::memset(&st, 0, sizeof(st));
+
+		if (XInputGetState(0, &st) != ERROR_SUCCESS)
+			return p;
+
+		p.connected = true;
+
+		// 左スティック
+		p.x = NormStick(st.Gamepad.sThumbLX);
+		p.y = NormStick(st.Gamepad.sThumbLY);
+		RadialDeadZone(p.x, p.y, 0.25f);
+
+		// スティックがニュートラルなら D-Pad を移動入力に
+		if ((p.x * p.x + p.y * p.y) < 1e-6f)
+		{
+			const WORD b = st.Gamepad.wButtons;
+
+			float dx = 0.0f;
+			float dy = 0.0f; // up positive
+
+			if (b & XINPUT_GAMEPAD_DPAD_LEFT)  dx -= 1.0f;
+			if (b & XINPUT_GAMEPAD_DPAD_RIGHT) dx += 1.0f;
+			if (b & XINPUT_GAMEPAD_DPAD_UP)    dy += 1.0f;
+			if (b & XINPUT_GAMEPAD_DPAD_DOWN)  dy -= 1.0f;
+
+			const float len2 = dx * dx + dy * dy;
+			if (len2 > 0.0f)
+			{
+				const float invLen = 1.0f / std::sqrt(len2);
+				p.x = dx * invLen;
+				p.y = dy * invLen;
+			}
+		}
+
+		return p;
+	}
+
+	inline PadBtnNow ReadPadBtn()
+	{
+		PadBtnNow o{};
+
+		XINPUT_STATE st{};
+		if (XInputGetState(0, &st) != ERROR_SUCCESS)
+			return o;
+
+		o.connected = true;
+
+		const auto& gp = st.Gamepad;
+		o.rt = std::clamp(gp.bRightTrigger / 255.0f, 0.0f, 1.0f);
+		o.a = (gp.wButtons & XINPUT_GAMEPAD_A) != 0;
+		o.rb = (gp.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0;
+		o.x = (gp.wButtons & XINPUT_GAMEPAD_X) != 0;
+		o.y = (gp.wButtons & XINPUT_GAMEPAD_Y) != 0;
+
+		return o;
+	}
+
+	inline PadBtnTrg MakePadTrigger(const PadBtnNow& now)
+	{
+		constexpr float RT_THRESHOLD = 0.50f;
+
+		static bool prevA = false;
+		static bool prevRB = false;
+		static bool prevRT = false;
+		static bool prevX = false;
+		static bool prevY = false;
+
+		const bool nowRT = (now.rt >= RT_THRESHOLD);
+
+		PadBtnTrg t{};
+		t.a = (now.a && !prevA);
+		t.rb = (now.rb && !prevRB);
+		t.rt = (nowRT && !prevRT);
+		t.x = (now.x && !prevX);
+		t.y = (now.y && !prevY);
+
+		prevA = now.a;
+		prevRB = now.rb;
+		prevRT = nowRT;
+		prevX = now.x;
+		prevY = now.y;
+
+		return t;
+	}
+
+	// 1フレームに複数回 XInputGetState() しないためのキャッシュ（ボタン系だけ）
+	inline PadBtnNow& PadBtnNowCache()
+	{
+		static PadBtnNow s_now{};
+		return s_now;
+	}
+	inline PadBtnTrg& PadBtnTrgCache()
+	{
+		static PadBtnTrg s_trg{};
+		return s_trg;
+	}
+	inline void UpdatePadBtnOncePerFrame()
+	{
+		PadBtnNowCache() = ReadPadBtn();
+		PadBtnTrgCache() = MakePadTrigger(PadBtnNowCache());
+	}
+}
+
 void player::init() {
 
 	m_mesh = MeshManager::getMesh<CStaticMesh>("Nekoo.fbx");
@@ -79,8 +240,6 @@ bool player::obstacleshitcheck() {
 
 	// 障害物を取得
 	std::vector<obstacle*> obstacles{};
-	//obstacles = ((CameraBasicScene*)m_ownerscene)->getobstacles();
-	//obstacles = ((TutorialScene*)m_ownerscene)->getobstacles();
 
 	// すべてのOBBと球の距離を求める
 	for (auto& obs : obstacles)
@@ -268,102 +427,102 @@ void player::OnDamage()
 }
 
 // プレイヤー移動操作関数
-void player::PlayerHandle() {
+void player::PlayerHandle()
+{
+	m_Acceleration = Vector3(0, 0, 0); // 加速度０クリア
+	//m_move = Vector3(0, 0, 0);
 
-	m_Acceleration = Vector3(0, 0, 0);				// 加速度０クリア
+	// ゲームパッド
+	const PadMove p = ReadPadMove();
 
-	if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_A)) {
-		if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_W))
-		{// 左前移動
+	if (p.connected)
+	{
+		const float sx = p.x;
+		const float sy = p.y;
 
-			float radian;
-			radian = PI * 0.75f;
+		const float mag2 = sx * sx + sy * sy;
 
-			m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
-			m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
+		constexpr float TURN_DZ = 0.35f;
+		const float turnDz2 = TURN_DZ * TURN_DZ;
 
-			m_destrot.y = radian;
+		if (mag2 > turnDz2)
+		{
+			const float mag = std::sqrt(mag2);
 
-		}
-		else if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_S))
-		{// 左後移動
+			const float nx = sx / mag;
+			const float ny = sy / mag;
 
-			float radian;
-			radian = PI * 0.25f;
+			const float radian = std::atan2(-nx, -ny);
 
-			m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
-			m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
+			const float t = std::clamp(mag, 0.0f, 1.0f);
+			const float speedScale = 0.2f + 0.8f * t;
 
-			// 目標角度をセット
-			m_destrot.y = radian;
-		}
-		else
-		{// 左移動
-
-			float radian;
-			radian = PI * 0.50f;
-
-			m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
-			m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
+			m_move.x -= std::sinf(radian) * (VALUE_MOVE_MODEL * speedScale);
+			m_move.z -= std::cosf(radian) * (VALUE_MOVE_MODEL * speedScale);
 
 			m_destrot.y = radian;
 		}
 	}
 
-	else if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_D))
-	{
-		if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_W)) {
-			// 右前移動
-
-			float radian;
-			radian = -PI * 0.75f;
-
+	//キーボード
+	if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_A)) {
+		if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_W))
+		{
+			float radian = PI * 0.75f;
 			m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
 			m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
-
 			m_destrot.y = radian;
-
 		}
 		else if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_S))
-		{// 右後移動
-			float radian;
-			radian = -PI * 0.25f;
-
+		{
+			float radian = PI * 0.25f;
 			m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
 			m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
-
 			m_destrot.y = radian;
 		}
 		else
-		{// 右移動
-
-			float radian;
-			radian = -PI * 0.50f;
-
+		{
+			float radian = PI * 0.50f;
 			m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
 			m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
-
+			m_destrot.y = radian;
+		}
+	}
+	else if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_D))
+	{
+		if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_W)) {
+			float radian = -PI * 0.75f;
+			m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
+			m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
+			m_destrot.y = radian;
+		}
+		else if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_S))
+		{
+			float radian = -PI * 0.25f;
+			m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
+			m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
+			m_destrot.y = radian;
+		}
+		else
+		{
+			float radian = -PI * 0.50f;
+			m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
+			m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
 			m_destrot.y = radian;
 		}
 	}
 	else if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_W))
-	{// 前移動
-		float radian;
-		radian = PI;
-
+	{
+		float radian = PI;
 		m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
 		m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
-
 		m_destrot.y = PI;
 	}
 	else if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_S))
-	{// 後移動
-		float radian;
-		radian = 0.0f;
-
+	{
+		float radian = 0.0f;
 		m_move.x -= sinf(radian) * VALUE_MOVE_MODEL;
 		m_move.z -= cosf(radian) * VALUE_MOVE_MODEL;
-
 		m_destrot.y = 0.0f;
 	}
 
@@ -374,53 +533,37 @@ void player::PlayerHandle() {
 
 	// モデル回転
 	if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_RIGHT))
-	{// 左回転
+	{
 		m_destrot.y = m_srt.rot.y - VALUE_ROTATE_MODEL;
-		if (m_destrot.y < -PI)
-		{
-			m_destrot.y += PI * 2.0f;
-		}
+		if (m_destrot.y < -PI) m_destrot.y += PI * 2.0f;
 	}
-
 	if (CDirectInput::GetInstance().CheckKeyBuffer(DIK_LEFT))
-	{// 右回転
+	{
 		m_destrot.y = m_srt.rot.y + VALUE_ROTATE_MODEL;
-		if (m_destrot.y > PI)
-		{
-			m_destrot.y -= PI * 2.0f;
-		}
+		if (m_destrot.y > PI) m_destrot.y -= PI * 2.0f;
 	}
 
+	// 回転補間
 	float diffrot = m_destrot.y - m_srt.rot.y;
-	if (diffrot > PI)
-	{
-		diffrot -= PI * 2.0f;
-	}
-	if (diffrot < -PI)
-	{
-		diffrot += PI * 2.0f;
-	}
+	if (diffrot > PI)  diffrot -= PI * 2.0f;
+	if (diffrot < -PI) diffrot += PI * 2.0f;
 
 	m_srt.rot.y += diffrot * RATE_ROTATE_MODEL;
-	if (m_srt.rot.y > PI)
-	{
-		m_srt.rot.y -= PI * 2.0f;
-	}
-	if (m_srt.rot.y < -PI)
-	{
-		m_srt.rot.y += PI * 2.0f;
-	}
+	if (m_srt.rot.y > PI)  m_srt.rot.y -= PI * 2.0f;
+	if (m_srt.rot.y < -PI) m_srt.rot.y += PI * 2.0f;
 
 	// 移動ベクトル補正してIdle状態
 	if (m_move.LengthSquared() < 0.0001f) {
 		m_move = Vector3(0, 0, 0);
 	}
-
 }
 
-void player::JumpHandle() {
-	// space押下でジャンプ
-	if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_SPACE) && m_onground)
+void player::JumpHandle()
+{
+	const bool keyJump = CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_SPACE);
+	const bool padJump = PadBtnTrgCache().a;
+
+	if ((keyJump || padJump) && m_onground)
 	{
 		m_Velocity.y = 12.0f;
 		m_onground = false;
@@ -446,12 +589,15 @@ BulletGimmick::BulletNo player::GetSelectedNo() const
 	return m_selectedNo;
 }
 
-//着火処理
 void player::ShotHandle()
 {
-	const bool trigger =
+	const bool keyOrMouse =
 		CDirectInput::GetInstance().GetMouseLButtonTrigger() ||
-		CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_B);
+		CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_B) ||
+		CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_X);
+
+	const bool padShot = PadBtnTrgCache().rt || PadBtnTrgCache().x;
+	const bool trigger = keyOrMouse || padShot;
 
 	m_shotFlg = false;
 
@@ -473,9 +619,8 @@ void player::ShotHandle()
 	}
 }
 
-// ショットの方角
-void player::CheckShotDir() {
-
+void player::CheckShotDir()
+{
 	Vector3 dir;
 	dir.x = -sinf(m_srt.rot.y);
 	dir.y = 0.0f;
@@ -498,6 +643,15 @@ static BulletGimmick::BulletNo ErementMode(int elementIndex, player::BulletMode 
 // 属性変更処理
 void player::HandleElement()
 {
+	// Pad RB: エレメントを順送り（Water->Fire->Wind->Water...）
+	if (PadBtnTrgCache().rb)
+	{
+		//XAudSound::GetInstance()->soundSEPlay((int)SoundSEAssets::change);
+		const int e = (static_cast<int>(m_element) + 1) % 2;
+		m_element = static_cast<BulletGimmick::Element>(e);
+		m_selectedNo = (BulletGimmick::BulletNo)((uint8_t)m_element * 2u + (uint8_t)m_bulletMode);
+	}
+
 	if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_1))
 	{
 		//XAudSound::GetInstance()->soundSEPlay((int)SoundSEAssets::change);
@@ -522,12 +676,13 @@ void player::HandleElement()
 
 void player::update(uint64_t dt)
 {
-	//fieldとの当たり判定
+	// ★追加: パッドボタンはこのフレーム分を確定させて使い回す
+	UpdatePadBtnOncePerFrame();
+
 	field* field = ((TutorialScene*)m_ownerscene)->getfield();
 	m_spawnPos = m_srt.pos;
 
-	// ジャンプ
-	m_Acceleration = Vector3(0, 0, 0);// 加速度０クリア
+	m_Acceleration = Vector3(0, 0, 0);
 
 	CheckShotDir();
 	ShotHandle();
@@ -629,8 +784,8 @@ void player::update(uint64_t dt)
         m_move += -m_move * RATE_MOVE_MODEL;
     }
 
-	// Shot（実時間: モード別Cooldown + 自前トリガー）
-	if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_Q))
+	// Shot/Trap 切り替え：Pad Y または キーボード Q
+	if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_Q) || PadBtnTrgCache().y)
 	{
 		XAudSound::GetInstance()->soundSEPlay((int)SoundSEAssets::change);
 		ChangeBullet();
@@ -669,7 +824,6 @@ void player::update(uint64_t dt)
 		m_srt.pos = Vector3(0.0f, 0.0f, 0.0f);
 		m_srt.rot = Vector3(0.0f, 0.0f, 0.0f);
 	}
-
 
 	//	m_srt.pos = m_Pos;
 
