@@ -148,13 +148,22 @@ private:
 	float m_kbV = 0.0f;		//ノックバックデフォ値垂直
 	int m_boostFrames = 0;
 
+	// Ghost見た目オフセット用
+	float m_ghostPhase = 0.0f;     // 個体ごとの位相
+	Vector3 m_ghostVisualOfs = Vector3(0, 0, 0);
+	Time::TimePoint m_ghostAscendStart = Time::Clock::time_point{};
+	Time::TimePoint m_ghostAscendEnd = Time::Clock::time_point{};
+	Time::TimePoint m_ghostBorn = Time::Clock::time_point{};
+	bool m_ghostAscending = false;
+	float m_ghostAscendStartY = 0.0f;
+
 	//タワー当り
 	uint64_t m_nextTowerHitMs = 0;
 
-	// 遠距離当たり判定半径（即席ポテト）
+	// 遠距離当たり判定半径
 	float m_collisionRadius = 20.0f;
 
-	float m_speed = 0.5f;					// 移動速度	
+	float m_speed = 0.0f;					// 移動速度	
 	Vector3	m_move = { 0.0f,0.0f,0.0f };	// 移動量
 	Vector3	m_destrot = { 0.0f,0.0f,0.0f };	// 目標回転角度
 	Vector3	m_Velocity{ 0,0,0 };				// 速度

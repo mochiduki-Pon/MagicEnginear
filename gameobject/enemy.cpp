@@ -12,11 +12,20 @@
 
 namespace
 {
+	// 調整用パラメータ
 	constexpr Vector3 SCALE_MOUSE(0.6f, 0.6f, 0.6f);
 	constexpr Vector3 SCALE_GHOST(0.4f, 0.4f, 0.4f);
 	constexpr int HP_MOUSE = 3;
 	constexpr int HP_GHOST = 5;
 	constexpr int BARRIER_HP_GHOST = 1;
+	constexpr float SPEED_MOUSE = 0.5f;
+	constexpr float SPEED_GHOST = 0.3f;
+
+	// Ghost 昇天演出
+	constexpr uint64_t GHOST_ASCEND_MS = 900;     // 演出時間
+	constexpr float    GHOST_ASCEND_SPEED = 0.08f; // 1msあたり上昇量
+	constexpr float    GHOST_ASCEND_SWAY_AMP = 6.0f;
+	constexpr float    GHOST_ASCEND_SWAY_HZ = 1.2f;
 }
 
 //控え選手状態
@@ -51,6 +60,7 @@ void enemy::Spawn(const Vector3& pos)
 	// stateに応じた見た目/サイズ/HPをセット
 	m_srt.scale = IsGhost() ? SCALE_GHOST : SCALE_MOUSE;
 	m_maxHp = IsGhost() ? HP_GHOST : HP_MOUSE;
+	m_speed = IsGhost() ? SPEED_GHOST : SPEED_MOUSE;
 
 	// バリア初期化
 	if (IsGhost())
@@ -65,6 +75,7 @@ void enemy::Spawn(const Vector3& pos)
 		m_barrierHp = 0;
 	}
 
+	// ステータス初期化
 	m_spawned = true; // 出場決定
 	m_sts = Status::Alive;
 	m_dead = false;
@@ -78,6 +89,15 @@ void enemy::Spawn(const Vector3& pos)
 	m_Acceleration = Vector3(0, 0, 0);
 	m_onground = true;
 	m_boostFrames = 0;
+
+	// ゴーストの場合
+	m_ghostBorn = Time::Get().Now();
+	m_ghostPhase = (m_id % 360) * (PI / 180.0f);
+	m_ghostVisualOfs = Vector3(0, 0, 0);
+	// 昇天状態リセット
+	m_ghostAscending = false;
+	m_ghostAscendStart = Time::Clock::time_point{};
+	m_ghostAscendEnd = Time::Clock::time_point{};
 
 	m_srt.rot.x = 0.0f;
 	m_srt.rot.z = 0.0f;
@@ -400,6 +420,7 @@ void enemy::Kill()
 }
 
 //死亡処理
+//死亡処理
 void enemy::EnterDeath()
 {
 	std::cout << "[DEATH ENTER] id=" << m_id
@@ -411,11 +432,28 @@ void enemy::EnterDeath()
 
 	m_move = Vector3(0, 0, 0);
 
+	if (IsGhost())
+	{
+		// 昇天開始
+		m_ghostAscending = true;
+		m_ghostVisualOfs = Vector3(0, 0, 0);
+
+		m_ghostAscendStart = Time::Get().Now();
+		m_ghostAscendEnd = m_ghostAscendStart + Time::Ms(GHOST_ASCEND_MS);
+		m_ghostAscendStartY = m_srt.pos.y;   // Ghost側で開始Y保存
+
+		return;
+	}
+
 	// まずZ-方向に倒す
 	m_srt.rot.x = -PI * 0.5f;
 
+	// 死体の物理を止める暴れ防止
+	m_Velocity = Vector3(0, 0, 0);
+	m_Acceleration = Vector3(0, 0, 0);
+
 	// 埋まり補正
-	const float lift = 10.0f * m_srt.scale.y;
+	const float lift = 20.0f * m_srt.scale.y;
 	m_srt.pos.y += lift;
 
 	// 死体を少し残す
@@ -506,6 +544,34 @@ void enemy::update(uint64_t dt)
 	field* field = ((TutorialScene*)m_ownerscene)->getfield();
 	float h = field->GetHeight2(m_srt.pos);
 
+	//Ghostの場合のふわふわオフセット
+	if (IsGhost())
+	{
+		const float bobAmp = 14.0f;		// 上下の振幅
+		const float bobHz = 0.30f;		// 周波数
+		const float sideAmp = 4.0f;		// 横揺れ
+		const float sideHz = 0.90f;		// 横周波数
+
+		// 絶対時刻から
+		const float sec = static_cast<float>(Time::ElapsedMs(m_ghostBorn)) * 0.001f;
+
+		const float tBob  = (sec * 2.0f * PI * bobHz)  + m_ghostPhase;
+		const float tSide = (sec * 2.0f * PI * sideHz) + m_ghostPhase * 1.7f;
+
+		float bob = sinf(tBob) * bobAmp;
+		bob += (sinf(tBob * 0.5f) * 0.5f + 0.5f) * (bobAmp * 0.25f); // 常に+寄り
+
+		float side = sinf(tSide) * sideAmp;
+
+		// オフセット適用
+		m_ghostVisualOfs = Vector3(side, bob, 0.0f);
+	}
+	else
+	{
+		m_ghostVisualOfs = Vector3(0, 0, 0);
+	}
+
+
 	// 落とし穴判
 	if (m_sts != Status::Dead && m_srt.pos.y < ENEMY_FALL_Y)
 	{
@@ -527,33 +593,32 @@ void enemy::update(uint64_t dt)
 
 	if (m_onground) m_srt.pos.y = m_groundheight;
 
-	switch (m_sts)
-	{
-	case Status::Alive:
-	{
+	switch (m_sts) {
+	case Status::Alive: {
+
 		// 反応先に
-		switch (m_reaction)
-		{
+		switch (m_reaction) {
+
 		case Reaction::None:
 			break;
-		case Reaction::Damage:
-		{
+		case Reaction::Damage: {
+
 			if (!m_damageImpulseDone)
 			{
 				m_damageImpulseDone = true;
-				
+
 				// 方向計算
-				 player* p = ((TutorialScene*)m_ownerscene)->getPlayer();
+				player* p = ((TutorialScene*)m_ownerscene)->getPlayer();
 				Vector3 dir = m_srt.pos - p->getSRT().pos;
 				dir.y = 0.0f;
-				
+
 				if (dir.LengthSquared() < 1e-6f)
 				{
 					dir = Vector3(0, 0, 1);
 				}
-				
+
 				dir.Normalize();
-				
+
 				const auto& sp = BulletGimmick::Spec(m_lastHitBulletNo);
 				// ノックバック
 				m_kbH = sp.kbH;
@@ -564,9 +629,9 @@ void enemy::update(uint64_t dt)
 					m_kbH = 14.0f;
 					m_kbV = 12.0f;
 				}
-				
+
 				m_hitFromExplosion = false;
-				
+
 				// 速度に反映
 				m_Velocity += dir * m_kbH;
 				m_Velocity.y += m_kbV;
@@ -589,7 +654,7 @@ void enemy::update(uint64_t dt)
 				}
 			}
 			break;
-}
+		}
 
 		case Reaction::Stun:
 			break;
@@ -619,8 +684,39 @@ void enemy::update(uint64_t dt)
 		break;
 	}
 
-	case Status::Dead:
-	{
+	case Status::Dead: {
+
+		if (IsGhost())
+		{
+			if (!m_ghostAscending)
+			{
+				// 保険：昇天フラグ無しなら即消し
+				SetSpawned(false);
+				break;
+			}
+
+			const auto now = Time::Get().Now();
+			if (now >= m_ghostAscendEnd)
+			{
+				SetSpawned(false);
+				break;
+			}
+
+			// 経過ms（0..GHOST_ASCEND_MS）
+			const uint64_t elapsedMs = Time::ElapsedMs(m_ghostAscendStart);
+			const float e = static_cast<float>(elapsedMs);
+			m_srt.pos.y = m_ghostAscendStartY + (GHOST_ASCEND_SPEED * e);
+
+			// 揺れ（見た目オフセット）
+			const float sec = e * 0.001f;
+			const float t = sec * 2.0f * PI * GHOST_ASCEND_SWAY_HZ + m_ghostPhase;
+			const float sx = sinf(t) * GHOST_ASCEND_SWAY_AMP;
+			const float sz = cosf(t * 0.9f) * (GHOST_ASCEND_SWAY_HZ * 0.6f) * (GHOST_ASCEND_SWAY_AMP / GHOST_ASCEND_SWAY_HZ);
+			m_ghostVisualOfs = Vector3(sx, 0.0f, sz);
+
+			break;
+		}
+
 		// 重力
 		m_Velocity.y += m_gravity.y * 0.5f;
 
@@ -700,6 +796,14 @@ void enemy::draw(uint64_t dt)
 	//);
 
 	Matrix4x4 mtx = m_srt.GetMatrix();
+
+	if (IsGhost())
+	{
+		// ゴーストオフセット適用
+		Matrix4x4 ofs = Matrix4x4::CreateTranslation(m_ghostVisualOfs);
+		mtx = ofs * mtx;
+	}
+
 	Renderer::SetWorldMatrix(&mtx);
 
 	m_shader->SetGPU();
@@ -743,13 +847,23 @@ void enemy::draw(uint64_t dt)
 	}
 	else
 	{
-		// 通常描画
 		if (IsGhost())
 		{
-			if (HasBarrier())
-				renderer->Draw(Color(1.0f, 1.0f, 1.0f, 0.55f)); // バリアあり
-			else
-				renderer->Draw(Color(1.0f, 1.0f, 1.0f, 1.0f)); // バリアなし
+			float alphaMul = 1.0f;
+
+			if (m_sts == Status::Dead && m_ghostAscending)
+			{
+				const uint64_t elapsedMs = Time::ElapsedMs(m_ghostAscendStart);
+				float t = static_cast<float>(elapsedMs) / static_cast<float>(GHOST_ASCEND_MS);
+				if (t > 1.0f) t = 1.0f;
+
+				alphaMul = 1.0f - (t * t); // 1→0
+			}
+
+			const float baseA = HasBarrier() ? 0.55f : 1.0f;
+			const float a = baseA * alphaMul;
+
+			renderer->Draw(Color(1.0f, 1.0f, 1.0f, a));
 		}
 		else
 		{

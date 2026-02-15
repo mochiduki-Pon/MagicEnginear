@@ -766,7 +766,12 @@ void TutorialScene::update(uint64_t deltatime)
 		const bool accept = (m_clearTimerMs > 500);
 
 		// Enter or PadX or PadB‚ÅŽŸ‚Ö
-		const bool nextTrig = PadTrigger();
+		auto& di = CDirectInput::GetInstance();
+		const bool enterTrig =
+			di.CheckKeyBufferTrigger(DIK_RETURN) ||
+			di.CheckKeyBufferTrigger(DIK_NUMPADENTER);
+
+		const bool nextTrig = enterTrig || PadTrigger();
 
 		if (accept && nextTrig)
 		{
