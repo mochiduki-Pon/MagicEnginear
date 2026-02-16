@@ -62,13 +62,13 @@ namespace
 
         const bool nowA = (st.Gamepad.wButtons & XINPUT_GAMEPAD_A) != 0;
 
-        // 簡易トリガ（シーン内 static で保持）
+        // 簡易トリガ
         static bool prevA = false;
         p.a = nowA;
         p.aTrg = (nowA && !prevA);
         prevA = nowA;
 
-        // スティック上下を「押した瞬間」扱いにしてメニュー移動へ変換
+        // メニュー移動へ変換
         constexpr float TH = 0.60f;
         const bool nowUp = (p.ly >= TH);
         const bool nowDown = (p.ly <= -TH);

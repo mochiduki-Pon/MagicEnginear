@@ -12,6 +12,7 @@
 #include <xinput.h>
 #pragma comment(lib, "xinput.lib")
 
+// pad
 namespace
 {
     struct XPadNav
@@ -71,6 +72,7 @@ TitleScene::TitleScene()
 
 void TitleScene::init()
 {
+    // フォント
     DirectWrite::GetInstance().Init(Renderer::GetSwapChain());
 
     m_font.fontSize = 32;
@@ -87,10 +89,12 @@ void TitleScene::init()
         "assets/texture/Title2.png", UV_FULL
     );
 
+    // bgm
     XAudSound::GetInstance()->soundInit();
     XAudSound::GetInstance()->soundBGMPlay
     ((int)SoundBGAssets::Title1);
 
+	//texture
     m_plateNormal[0] = std::make_unique<CSprite>(256, 60, "assets/texture/f1408_4.png", UV_FULL);
     m_plateSelected[0] = std::make_unique<CSprite>(256, 60, "assets/texture/f1408_41.png", UV_FULL);
 
@@ -180,13 +184,13 @@ void TitleScene::update(uint64_t)
         return;
     }
 
-    // --- XInputで操作確認（Title用） ---
+    // XInputで操作
     const auto pad = ReadTitleXInput();
 
     if (m_cursor)
         m_cursor->SetColor(pad.connected ? Color(1, 1, 1, 1) : Color(0.4f, 0.4f, 0.4f, 1));
 
-    // --- Keyboard ---
+    // Keyboard
     const bool keyUpTrg = CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_W);
     const bool keyDownTrg = CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_S);
     const bool keyDecideTrg =
