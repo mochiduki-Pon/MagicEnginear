@@ -137,6 +137,7 @@ private:
 
 	//í“¬ŠÖ˜A
 	int m_attackPower = 5;   // “G‚²‚Æ‚ÌUŒ‚—Í
+	int m_critical = 2;			// ƒNƒŠƒeƒBƒJƒ‹”{—¦
 	Cooldown m_attackCD;     // UŒ‚ŠÔŠu
 	bool m_deathEntered = false;
 	bool m_damageImpulseDone = false;

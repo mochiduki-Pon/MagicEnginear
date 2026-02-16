@@ -26,6 +26,10 @@ namespace
 	constexpr float    GHOST_ASCEND_SPEED = 0.08f; // 1msあたり上昇量
 	constexpr float    GHOST_ASCEND_SWAY_AMP = 6.0f;
 	constexpr float    GHOST_ASCEND_SWAY_HZ = 1.2f;
+
+	// 爆発ノックバック
+	constexpr float EXPLOSION_KB_H = 14.0f;
+	constexpr float EXPLOSION_KB_V = 12.0f;
 }
 
 //控え選手状態
@@ -44,6 +48,7 @@ void enemy::init()
 	m_sts = Status::Dead;
 	m_dead = true;
 	m_spawned = false;
+	m_critical = 2;
 
 	// デフォルト
 	m_enemyState = EnemyState::Normal;
@@ -134,6 +139,7 @@ Vector3 enemy::GetColliderCenter() const
 	return m_srt.pos + Vector3(0, GetCollisionRadius(), 0);
 }
 
+// 他の敵との分離
 void enemy::SeparateFromOthers()
 {
 	auto* scn = static_cast<TutorialScene*>(m_ownerscene);
@@ -311,8 +317,42 @@ bool enemy::ShouldCollideWith(BulletGimmick::BulletNo no) const
 {
 	if (!IsGhost()) return true;
 
-	// 3以外は当たり判定を取らない
-	return no == BulletGimmick::BulletNo::FireShot;
+	// バリア中はFireShotだけ
+	if (HasBarrier())
+		return no == BulletGimmick::BulletNo::FireShot;
+
+	// バリア無しならShotは当てる
+	return BulletGimmick::GetMode(no) == BulletGimmick::BulletMode::Shot;
+}
+
+// 幽霊の透過状態
+void enemy::OnHitBullet(BulletGimmick::BulletNo no, int damage)
+{
+	if (m_sts == Status::Dead) return;
+
+	SetLastHitBulletNo(no);
+
+	// バリア中FireShotのみバリアを削る
+	if (HasBarrier())
+	{
+		if (no == BulletGimmick::BulletNo::FireShot)
+		{
+			--m_barrierHp;
+			if (m_barrierHp < 0) m_barrierHp = 0;
+		}
+		return;
+	}
+
+	// バリア無し：通常ダメージ
+	int finalDamage = damage;
+
+	// Ghostは FireShot のみ2倍
+	if (IsGhost() && no == BulletGimmick::BulletNo::FireShot)
+	{
+		finalDamage *= m_critical;
+	}
+
+	Damage(finalDamage);
 }
 
 //外部引き渡しラップ（被弾入口）
@@ -334,38 +374,6 @@ void enemy::Damage(int amount)
 		m_pendingKill = true;
 	}
 
-}
-
-// 幽霊の透過状態
-void enemy::OnHitBullet(BulletGimmick::BulletNo no, int damage)
-{
-	if (m_sts == Status::Dead) return;
-
-	SetLastHitBulletNo(no);
-
-	const auto elem = BulletGimmick::GetElement(no);
-
-	// バリア透過
-	if (HasBarrier())
-	{
-		// Fireだけバリアを削れる（No3onenable）
-		if (elem == BulletGimmick::Element::Fire)
-		{
-			// 1ヒットで1削る
-			--m_barrierHp;
-			if (m_barrierHp < 0) m_barrierHp = 0;
-
-			// バリアが残っている場合透過
-			if (HasBarrier())
-				return;
-		}
-
-		// Fire以外は完全透過
-		return;
-	}
-
-	// バリア無し：通常ダメージ
-	Damage(damage);
 }
 
 //被弾処理
@@ -626,8 +634,8 @@ void enemy::update(uint64_t dt)
 				// 爆発ノックバック
 				if (m_hitFromExplosion)
 				{
-					m_kbH = 14.0f;
-					m_kbV = 12.0f;
+					m_kbH = EXPLOSION_KB_H;		//14f
+					m_kbV = EXPLOSION_KB_V;		//12f
 				}
 
 				m_hitFromExplosion = false;
@@ -783,17 +791,6 @@ void enemy::draw(uint64_t dt)
 {
 	if (!m_spawned)
 		return;
-
-	//(void)dt;
-	// debug用当たり判定可視化
-	//Vector3 center = GetColliderCenter();
-	//SphereDrawerDraw(
-	//	GetCollisionRadius(),
-	//	Color(1, 0, 0, 0.4f),   // 青・半透明
-	//	center.x,
-	//	center.y,
-	//	center.z
-	//);
 
 	Matrix4x4 mtx = m_srt.GetMatrix();
 

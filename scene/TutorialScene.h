@@ -110,7 +110,7 @@ public:
 private:
 
 	//waveシナリオ
-	enum class Stage { Stage1,	Stage2, Stage3, Stage4, Stage5, Count};
+	enum class Stage { Stage1,	Stage2, Stage3, Stage4, Stage5, Stage6, Count};
 	enum class UiState : uint8_t { InGame, Clear };
 	UiState m_uiState = UiState::InGame;
 	Stage   m_stage = Stage::Stage1;
@@ -154,6 +154,12 @@ private:
 
 	static constexpr WaveScript STAGE5_SCRIPT[] = {
 	{ 400, 2, 1, enemy::EnemyState::Ghost} };
+
+	static constexpr WaveScript STAGE6_SCRIPT[] = {
+	{ 400, 1, 1, enemy::EnemyState::Ghost},
+	{ 400, 2, 1, enemy::EnemyState::Normal},
+	{ 400, 3, 1, enemy::EnemyState::Ghost},
+	{ 4000, 2, 1, enemy::EnemyState::Normal}, };
 
 	bool	m_cleared = false;			// フェード円表示
 	bool	m_isGameOver = false;		// ゲームオーバー状態

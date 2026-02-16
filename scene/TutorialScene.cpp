@@ -458,6 +458,10 @@ void TutorialScene::SetupStage(Stage stage)
 		m_script = STAGE5_SCRIPT;
 		m_scriptCount = std::size(STAGE5_SCRIPT);
 		break;
+	case Stage::Stage6:
+		m_script = STAGE6_SCRIPT;
+		m_scriptCount = std::size(STAGE6_SCRIPT);
+		break;
 	}
 
 	m_stageStartTime = Time::Get().Now();
@@ -745,6 +749,7 @@ void TutorialScene::update(uint64_t deltatime)
 		return;
 	}
 
+	// クリア状態の処理
 	if (m_uiState == UiState::Clear)
 	{
 		m_clearTimerMs += deltatime;
@@ -808,6 +813,7 @@ void TutorialScene::draw(uint64_t deltatime)
 		shader->SetGPU();
 		sr->Draw();
 	}
+
 	{
 		SRT srt;
 		srt.pos = Vector3(0, 0, 880);
@@ -1128,41 +1134,10 @@ void TutorialScene::init()
 		UV_FULL
 	);
 
+	// エフェクト
 	m_effectExplosion = std::make_unique<EffectSystem>();
 	m_effectExplosion->init();
 	SphereDrawerInit();
-
-	// Door座標の当たり判定壁
-	{
-		// Door.fbx の描画に合わせた基準位置
-		constexpr Vector3 DOOR_POS = Vector3(0.0f, 0.0f, 880.0f);
-
-		// 平面サイズ
-		constexpr float WALL_H = 200.0f;
-		float wallW = 500.0f; // 可変:幅
-
-		SRT srt{};
-		srt.scale = Vector3(1.0f, 1.0f, 1.0f);
-		srt.rot = Vector3(0.0f, 0.0f, 0.0f);
-
-		// Yは地面Heightに合わせる
-		Vector3 pos = DOOR_POS;
-		pos.y = m_field->GetHeight2(pos);
-
-		srt.pos = pos;
-
-		m_walls[0] = std::make_unique<wall>(this, srt, wallW, WALL_H);
-		m_walls[0]->setSRT(srt); // gameobject側へ反映
-		m_walls[0]->init();      // 平面生成
-
-		{
-			SRT srt2 = srt;
-			srt2.pos.z = -srt.pos.z;   // Z-方向にも
-			m_walls[1] = std::make_unique<wall>(this, srt2, wallW, WALL_H);
-			m_walls[1]->setSRT(srt2);
-			m_walls[1]->init();
-		}
-	}
 }
 
 /**

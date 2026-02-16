@@ -48,6 +48,7 @@ private:
     bool m_decided = false;     // Œˆ’è‚µ‚½‚©
     bool m_enterFade = false;   //“ü‚è
     Time::TimePoint m_fadeStart{};
+    Time::TimePoint m_bobStart{};
     float m_circleScale = 0.0f;
 
     float RowCenterY(int idx, float cy) const;

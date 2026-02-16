@@ -69,7 +69,6 @@ namespace
         prevA = nowA;
 
         // スティック上下を「押した瞬間」扱いにしてメニュー移動へ変換
-        // ※アナログのチャタリング防止に、しきい値＋エッジ検出
         constexpr float TH = 0.60f;
         const bool nowUp = (p.ly >= TH);
         const bool nowDown = (p.ly <= -TH);
@@ -94,7 +93,6 @@ void GameOverScene::init()
     DirectWrite::GetInstance().Init(Renderer::GetSwapChain());
 
     m_font.fontSize = 32;
-    //m_font.Color = D2D1::ColorF(D2D1::ColorF::Silver);
     m_font.Color = D2D1::ColorF(0.30f, 0.22f, 0.16f, 1.0f);
     DirectWrite::GetInstance().SetFont(m_font);
 
@@ -103,20 +101,36 @@ void GameOverScene::init()
         Vector2(0, 1), Vector2(1, 1)
     };
 
-    //ボタンプレート
-    m_plate[0] = std::make_unique<CSprite>(static_cast<int>(512.0f * 0.5f), static_cast<int>(120.0f * 0.5f), "assets/texture/f1408_1.png", UV_FULL);
-    m_plate[1] = std::make_unique<CSprite>(static_cast<int>(512.0f * 0.5f), static_cast<int>(120.0f * 0.5f), "assets/texture/f1408_1.png", UV_FULL);
+    // ボタンプレート
+    m_plate[0] = std::make_unique<CSprite>(
+        static_cast<int>(512.0f * 0.5f),
+        static_cast<int>(120.0f * 0.5f),
+        "assets/texture/f1408_1.png",
+        UV_FULL
+    );
+    m_plate[1] = std::make_unique<CSprite>(
+        static_cast<int>(512.0f * 0.5f),
+        static_cast<int>(120.0f * 0.5f),
+        "assets/texture/f1408_1.png",
+        UV_FULL
+    );
 
-    //カーソル
+    // カーソル
     m_cursor = std::make_unique<CSprite>(50, 50, "assets/texture/914610.png", UV_FULL);
-    m_accept = std::make_unique<CSprite>(static_cast<int>(390.0f * 0.4f), static_cast<int>(228.0f * 0.4f), "assets/texture/Abotan.png", UV_FULL);
+    m_accept = std::make_unique<CSprite>(
+        static_cast<int>(390.0f * 0.4f),
+        static_cast<int>(228.0f * 0.4f),
+        "assets/texture/Abotan.png",
+        UV_FULL
+    );
 
     m_over = std::make_unique<CSprite>(300, 300, "assets/texture/over.png", UV_FULL);
     m_bg = std::make_unique<CSprite>(
         Application::GetWidth(),
         Application::GetHeight(),
         "assets/texture/cEND.png",
-        UV_FULL);;
+        UV_FULL
+    );
 
     m_circle = std::make_unique<CSprite>(256, 256, "assets/texture/Circle256_o.png", UV_FULL);
 
@@ -126,6 +140,9 @@ void GameOverScene::init()
     m_enterFade = true;
     m_circleScale = START_SCALE;
     m_fadeStart = Time::Get().Now();
+
+    // ★追加：ふよふよ開始時刻
+    m_bobStart = Time::Get().Now();
 
     GetXAud()->soundSEPlay((int)SoundSEAssets::cEND, -0.5f);
 }
@@ -165,14 +182,12 @@ void GameOverScene::DrawMenuText(const char* text, float cx, float rowCY)
 
 void GameOverScene::update(uint64_t)
 {
-    static constexpr float FADE_MS = 800.0f; // フェード時間
-    static constexpr float START_SCALE = 8.0f; // 円の最大拡大率
+    static constexpr float FADE_MS = 800.0f;      // フェード時間
+    static constexpr float START_SCALE = 8.0f;    // 円の最大拡大率
 
     if (m_enterFade)
     {
-        const float t =
-            (float)Time::ElapsedMs(m_fadeStart) / FADE_MS;
-
+        const float t = (float)Time::ElapsedMs(m_fadeStart) / FADE_MS;
         float clamped = (t > 1.0f) ? 1.0f : t;
 
         m_circleScale = START_SCALE * (1.0f - clamped);
@@ -185,12 +200,10 @@ void GameOverScene::update(uint64_t)
         return;
     }
 
-    // フェード
+    // 決定後フェード
     if (m_decided)
     {
-        const float t =
-            (float)Time::ElapsedMs(m_fadeStart) / FADE_MS;
-
+        const float t = (float)Time::ElapsedMs(m_fadeStart) / FADE_MS;
         float clamped = (t > 1.0f) ? 1.0f : t;
 
         m_circleScale = START_SCALE * clamped;
@@ -204,10 +217,13 @@ void GameOverScene::update(uint64_t)
         return;
     }
 
-    // パッド入力（未決定中のみ）
+    // パッド入力
     const auto pad = ReadPad();
 
-    // 未決定：メニュー操作（キーボード + スティック）
+    if (m_cursor)
+        m_cursor->SetColor(pad.connected ? Color(1, 1, 1, 1) : Color(0.4f, 0.4f, 0.4f, 1));
+
+    // メニュー操作
     if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_W) || (pad.connected && pad.upTrg)) m_select--;
     if (CDirectInput::GetInstance().CheckKeyBufferTrigger(DIK_S) || (pad.connected && pad.downTrg)) m_select++;
 
@@ -219,10 +235,11 @@ void GameOverScene::update(uint64_t)
 
     if (decide)
     {
-        // ここでリスタ
+        GetXAud()->soundSEPlay((int)SoundSEAssets::SeAccept);
+        // ここでリセット
         EnemyCounter::GetInstance().ResetWave();
-        EnemyCounter::GetInstance().ResetTotal();   // 累積も消すなら
-        //UI::Get().ResetForNewRun();                 // UIが残るなら
+        EnemyCounter::GetInstance().ResetTotal();   // 累積も消す
+        //UI::Get().ResetForNewRun();
 
         m_decided = true;
         m_circleScale = 0.0f;
@@ -239,8 +256,6 @@ void GameOverScene::draw(uint64_t)
     const Vector3 rot(0, 0, 0);
 
     static constexpr float MENU_OFFSET_X = -300.0f;
-    static constexpr float OVER_OFFSET_Y = -60.0f;
-
     static constexpr float ACCEPT_OFFSET_X = 100.0f;
     static constexpr float ACCEPT_OFFSET_Y = -50.0f;
 
@@ -249,10 +264,17 @@ void GameOverScene::draw(uint64_t)
     const float overX = cx - 20.0f;  // 中央より左
     const float overY = cy - 20.0f;
 
-
     const float row0Y = RowCenterY(0, cy);
     const float row1Y = RowCenterY(1, cy);
     const float selY = RowCenterY(m_select, cy);
+
+    // ふよふよ
+    const auto now = Time::Get().Now();
+    const float tSec = (float)Time::ElapsedMs(m_bobStart, now) * 0.001f;
+
+    static constexpr float BOB_A = 5.0f;
+    static constexpr float BOB_HZ = 0.6f;
+    const float bobY = std::sinf(tSec * 2.0f * PI * BOB_HZ) * BOB_A;
 
     // 背景＆Over
     if (m_bg)   m_bg->Draw(scale, rot, Vector3(cx, cy, 0));
@@ -267,12 +289,13 @@ void GameOverScene::draw(uint64_t)
     DrawMenuText("TITLE", menuX + TEXT_CENTER_OFFSET_X, row1Y);
 
     // カーソル
-    if (m_cursor) m_cursor->Draw(scale, rot, Vector3(CursorX(menuX), selY, 0));
+    if (m_cursor) m_cursor->Draw(scale, rot, Vector3(CursorX(menuX), selY + bobY, 0));
 
     // ACCEPT
     if (m_decided && m_accept)
-        m_accept->Draw(scale, rot, Vector3(menuX + ACCEPT_OFFSET_X, selY + ACCEPT_OFFSET_Y, 0));
+        m_accept->Draw(scale, rot, Vector3(menuX + ACCEPT_OFFSET_X, selY + ACCEPT_OFFSET_Y + bobY, 0));
 
+    // 円フェード
     if (m_circle && m_circleScale > 0.0f && (m_enterFade || m_decided))
     {
         const Vector3 s(m_circleScale, m_circleScale, 1.0f);
